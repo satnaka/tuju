@@ -32,6 +32,7 @@ struct AccountPage<Content: View>: View {
         }
         .background(LinearGradient(colors: [AccountPalette.mist, AccountPalette.paper, AccountPalette.paper], startPoint: .top, endPoint: .bottom).ignoresSafeArea())
         .foregroundStyle(AccountPalette.ink)
+        .buttonStyle(HeroUIGlassButtonStyle())
         .tint(AccountPalette.blue)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
@@ -44,9 +45,7 @@ struct AccountCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 10) { content }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white.opacity(0.78), in: RoundedRectangle(cornerRadius: 23))
-            .overlay { RoundedRectangle(cornerRadius: 23).stroke(.white, lineWidth: 1) }
-            .shadow(color: AccountPalette.ink.opacity(0.046), radius: 8, y: 4)
+            .heroGlass(.card)
     }
 }
 
@@ -57,7 +56,7 @@ struct AccountRowLabel: View {
     var body: some View {
         HStack(spacing: 12) {
             if let art { Image(art).resizable().scaledToFit().frame(width: 22, height: 22).accessibilityHidden(true) }
-            Text(title).font(.subheadline.weight(.medium))
+            Text(title).font(HeroUIGlass.controlFont)
             Spacer()
             if !detail.isEmpty { Text(detail).font(.caption).foregroundStyle(.secondary) }
             Image(systemName: "chevron.right").font(.caption.bold()).foregroundStyle(.secondary)
@@ -70,10 +69,16 @@ struct AccountAction: View {
     let title: String
     var prominent = true
     var body: some View {
-        Text(title).font(.headline).padding(.horizontal).padding(.vertical, 13)
+        Text(title).font(HeroUIGlass.controlFont).padding(.horizontal).padding(.vertical, 13)
             .frame(maxWidth: .infinity)
             .foregroundStyle(prominent ? Color.white : AccountPalette.blue)
-            .background(prominent ? AccountPalette.blue : Color.white.opacity(0.9), in: Capsule())
+            .background {
+                if prominent {
+                    Capsule().fill(AccountPalette.blue)
+                } else {
+                    Capsule().fill(.regularMaterial).overlay { Capsule().fill(Color.primary.opacity(0.07)) }
+                }
+            }
     }
 }
 

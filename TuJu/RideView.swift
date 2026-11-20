@@ -58,12 +58,11 @@ struct TuJuRideView: View {
                     if stage == .options { options } else { booking }
                 }
                 .padding(16).frame(maxWidth: .infinity)
-                .background(LinearGradient(colors: [.cyan.opacity(0.055), .white.opacity(0.68)], startPoint: .top, endPoint: .bottom), in: RoundedRectangle(cornerRadius: 27))
-                .overlay { RoundedRectangle(cornerRadius: 27).stroke(.white, lineWidth: 1) }
+                .heroGlass(.panel, radius: 27)
                 Text("Ride preview · Simulated drivers and fares").font(.caption2).foregroundStyle(.secondary)
             }.padding(.horizontal, 20).padding(.vertical, 12)
         }.background(Color(red: 0.94, green: 0.98, blue: 0.99).ignoresSafeArea())
-        .foregroundStyle(Color.tujuNavy).buttonStyle(.plain)
+        .foregroundStyle(Color.tujuNavy).buttonStyle(HeroUIGlassButtonStyle())
         .task(id: stage) {
             guard stage == .finding else { return }
             do { try await Task.sleep(for: .seconds(3)) } catch { return }
@@ -163,7 +162,7 @@ struct TuJuRideView: View {
                 }
             } label: {
                 Text(stage == .finding ? "Cancel search" : stage == .matched ? "Preview pickup" : "Finish preview")
-                    .font(.subheadline.bold()).foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 42)
+                    .font(HeroUIGlass.controlFont).foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 44)
                     .background(.blue, in: Capsule())
             }
         }

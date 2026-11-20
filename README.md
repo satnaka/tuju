@@ -1,6 +1,6 @@
 # TuJu
 
-TuJu is an interactive iPhone navigation concept set in Kuala Lumpur. It uses the supplied Figma artwork and native SwiftUI controls. The featured journey to One Utama works offline.
+TuJu is an interactive iPhone navigation concept set in Kuala Lumpur. It combines the supplied Figma artwork with HeroUI Pro, SwiftUI and MapKit. The featured journey to One Utama works offline.
 
 ## Try the concept
 
@@ -15,6 +15,8 @@ The illustrative map, lane instructions, sample traffic, fares and vouchers are 
 
 ## Design
 
-The visual reference is the **Main UI Screen (Finalized)** page. Figma artwork is bundled locally. The native app uses SwiftUI and MapKit. HeroUI Pro is available as a design-reference MCP connection in Codex.
+The visual reference is the **Main UI Screen (Finalized)** page. On Home, the destination and R&R rows use HeroUI Pro ItemCard, and search and shortcuts use HeroUI Button. The shared bottom navigation uses HeroUI Pro Navbar. A local WebKit view displays these controls and passes taps to SwiftUI. The route, ride and account screens use the Pro Glass theme’s surface and interaction values in SwiftUI.
+
+Xcode includes a prebuilt copy of the controls for both iPhone and Mac. No Node.js or HeroUI login is needed to run the app. See the [HeroUI build instructions](HeroUI/README.md) to edit and regenerate the controls.
 
 [Open the source design in Figma](https://www.figma.com/design/5njuLGsk4xiY1H613dOfja/GDC601---Communication-Studio-2?node-id=72-9085)

@@ -208,7 +208,7 @@ struct JourneyDriveView: View {
                 }
                 Text(subtitle).font(.caption).foregroundStyle(.secondary)
             }.padding(10).frame(maxWidth: .infinity, minHeight: 64).journeyCard(16)
-        }.buttonStyle(.plain)
+        }.buttonStyle(HeroUIGlassButtonStyle())
     }
 
     private func control(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
@@ -219,9 +219,9 @@ struct JourneyDriveView: View {
 
     private func driveButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Label(title, systemImage: symbol).font(.subheadline.weight(.semibold))
+            Label(title, systemImage: symbol).font(HeroUIGlass.controlFont)
                 .frame(maxWidth: .infinity, minHeight: 41).journeyCard(15)
-        }.buttonStyle(.plain)
+        }.buttonStyle(HeroUIGlassButtonStyle())
     }
 
     private func advance() {

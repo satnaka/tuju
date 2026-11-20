@@ -18,8 +18,32 @@ enum TuJuTab: String, CaseIterable {
 struct TuJuTabBar: View {
     let selected: TuJuTab
     let onSelect: (TuJuTab) -> Void
+    @ScaledMetric(relativeTo: .body) private var fontScale: CGFloat = 1
+    @State private var controlHeight: CGFloat = 56
+    @State private var useNativeControls = false
 
     var body: some View {
+        Group {
+            if useNativeControls {
+                nativeTabs
+            } else {
+                HeroUIControlSurface(
+                    state: HeroUIState(surface: "tabs", selected: selected.rawValue, fontScale: Double(fontScale)),
+                    onAction: { action in
+                        if let tab = TuJuTab.allCases.first(where: { "tab" + $0.rawValue == action }) {
+                            onSelect(tab)
+                        }
+                    },
+                    onHeight: { controlHeight = $0 },
+                    onUnavailable: { useNativeControls = true }
+                )
+                .frame(height: controlHeight)
+            }
+        }
+        .padding(.horizontal, 15)
+    }
+
+    private var nativeTabs: some View {
         HStack(spacing: 0) {
             ForEach(TuJuTab.allCases, id: \.self) { tab in
                 Button {
@@ -42,7 +66,6 @@ struct TuJuTabBar: View {
         .overlay { Capsule().stroke(.white.opacity(0.85), lineWidth: 1) }
         .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
         .buttonStyle(.plain)
-        .padding(.horizontal, 15)
     }
 }
 
@@ -63,7 +86,11 @@ struct RootView: View {
     @State private var sheet: HomeSheet?
     @State private var launch: JourneyLaunch?
     @State private var pendingLaunch: JourneyLaunch?
+    @State private var pendingTab: TuJuTab?
     @State private var cardExpanded = true
+    @State private var panelHeight: CGFloat = 289
+    @State private var useNativePanel = false
+    @ScaledMetric(relativeTo: .body) private var fontScale: CGFloat = 1
     @State private var camera: MapCameraPosition = .region(Self.kualaLumpur)
     @StateObject private var location = ExploreLocation()
     @ObservedObject private var history = JourneyHistory.shared
@@ -80,6 +107,48 @@ struct RootView: View {
     private var recent: JourneyPlace { history.recent.first ?? .klSentral }
 
     var body: some View {
+        GeometryReader { viewport in
+            mapAndControls(panelLimit: max(110, viewport.size.height - 245))
+        }
+        .preferredColorScheme(.light)
+        .buttonStyle(.plain)
+        .sheet(item: $sheet, onDismiss: {
+            if let pendingLaunch { launch = pendingLaunch; self.pendingLaunch = nil }
+        }) { section in
+            switch section {
+            case .profile: TuJuProfileView()
+            case .rewards: TuJuRewardsView()
+            case .layers: TuJuMapAppearanceView()
+            case .home, .work, .saved:
+                PlaceCollectionView(title: section == .saved ? "Saved places" : "Choose " + section.rawValue,
+                                    places: collection(for: section),
+                                    isSaved: section == .saved,
+                                    select: { place in select(place, for: section) },
+                                    browse: {
+                                        pendingLaunch = JourneyLaunch()
+                                        sheet = nil
+                                    })
+            }
+        }
+        .fullScreenCover(item: $launch, onDismiss: {
+            if let pendingTab { self.pendingTab = nil; selectTab(pendingTab) }
+        }) { request in
+            JourneyView(initialQuery: request.query, origin: location.current?.coordinate,
+                        initialDestination: request.destination, showStopsInitially: request.showStops, onTab: { newTab in
+                            pendingTab = newTab
+                            launch = nil
+                        }, onClose: { launch = nil })
+        }
+        .onChange(of: location.current) { _, value in
+            guard let value else { return }
+            camera = .region(.init(center: value.coordinate, latitudinalMeters: 2200, longitudinalMeters: 2200))
+        }
+        .alert("Location unavailable", isPresented: $location.failed) {
+            Button("OK") {}
+        } message: { Text("You can continue exploring Kuala Lumpur or allow location access in Settings.") }
+    }
+
+    private func mapAndControls(panelLimit: CGFloat) -> some View {
         ZStack {
             if tab == .trips {
                 TripHistoryView(trips: history.trips) { place in launch = JourneyLaunch(destination: place) }
@@ -115,7 +184,7 @@ struct RootView: View {
                             }
                         }
                     }.padding(.horizontal, 18).padding(.bottom, 20)
-                    if tab == .home { exploreCard }
+                    if tab == .home { journeyControls(maxHeight: panelLimit) }
                     else {
                         Button { launch = JourneyLaunch() } label: {
                             searchField.padding(.horizontal, 18)
@@ -130,40 +199,6 @@ struct RootView: View {
                 TuJuTabBar(selected: tab, onSelect: selectTab)
             }
         }
-        .preferredColorScheme(.light)
-        .buttonStyle(.plain)
-        .sheet(item: $sheet, onDismiss: {
-            if let pendingLaunch { launch = pendingLaunch; self.pendingLaunch = nil }
-        }) { section in
-            switch section {
-            case .profile: TuJuProfileView()
-            case .rewards: TuJuRewardsView()
-            case .layers: TuJuMapAppearanceView()
-            case .home, .work, .saved:
-                PlaceCollectionView(title: section == .saved ? "Saved places" : "Choose " + section.rawValue,
-                                    places: collection(for: section),
-                                    isSaved: section == .saved,
-                                    select: { place in select(place, for: section) },
-                                    browse: {
-                                        pendingLaunch = JourneyLaunch()
-                                        sheet = nil
-                                    })
-            }
-        }
-        .fullScreenCover(item: $launch) { request in
-            JourneyView(initialQuery: request.query, origin: location.current?.coordinate,
-                        initialDestination: request.destination, showStopsInitially: request.showStops, onTab: { newTab in
-                            launch = nil
-                            selectTab(newTab)
-                        }, onClose: { launch = nil })
-        }
-        .onChange(of: location.current) { _, value in
-            guard let value else { return }
-            camera = .region(.init(center: value.coordinate, latitudinalMeters: 2200, longitudinalMeters: 2200))
-        }
-        .alert("Location unavailable", isPresented: $location.failed) {
-            Button("OK") {}
-        } message: { Text("You can continue exploring Kuala Lumpur or allow location access in Settings.") }
     }
 
     private var categories: some View {
@@ -221,6 +256,47 @@ struct RootView: View {
         }.accessibilityLabel(title)
     }
 
+    private var recentDetail: String {
+        history.recent.isEmpty ? "Recent destination · Kuala Lumpur" : recent.subtitle
+    }
+
+    @ViewBuilder private func journeyControls(maxHeight: CGFloat) -> some View {
+        if useNativePanel {
+            exploreCard
+        } else {
+            HeroUIControlSurface(
+                state: HeroUIState(surface: "journey", expanded: cardExpanded, recentName: recent.name,
+                                   recentDetail: recentDetail, fontScale: Double(fontScale)),
+                onAction: performHomeAction,
+                onHeight: { panelHeight = $0 },
+                onUnavailable: { useNativePanel = true }
+            )
+            .frame(height: min(panelHeight, maxHeight))
+            .padding(.horizontal, 10)
+        }
+    }
+
+    private func performHomeAction(_ action: String) {
+        switch action {
+        case "toggle": cardExpanded.toggle()
+        case "search": launch = JourneyLaunch()
+        case "home": openShortcut(.home, data: homeData)
+        case "work": openShortcut(.work, data: workData)
+        case "changeHome": sheet = .home
+        case "changeWork": sheet = .work
+        case "saved": sheet = .saved
+        case "recent": launch = JourneyLaunch(destination: recent)
+        case "stops": launch = JourneyLaunch(destination: .oneUtama, showStops: true)
+        default: break
+        }
+    }
+
+    private func openShortcut(_ section: HomeSheet, data: Data) {
+        if let place = try? JSONDecoder().decode(JourneyPlace.self, from: data) {
+            launch = JourneyLaunch(destination: place)
+        } else { sheet = section }
+    }
+
     private var exploreCard: some View {
         VStack(spacing: 9) {
             Button { withAnimation { cardExpanded.toggle() } } label: {
@@ -238,8 +314,7 @@ struct RootView: View {
                     shortcut("Saved", asset: "HomeSaved", section: .saved, data: Data())
                 }
                 Button { launch = JourneyLaunch(destination: recent) } label: {
-                    placeRow(asset: "HomeRecent", name: recent.name,
-                             detail: history.recent.isEmpty ? "Recent destination · Kuala Lumpur" : recent.subtitle)
+                    placeRow(asset: "HomeRecent", name: recent.name, detail: recentDetail)
                 }
                 Button { launch = JourneyLaunch(destination: .oneUtama, showStops: true) } label: {
                     placeRow(asset: "HomeStop", name: "Plan your next R&R stop", detail: "Compare crowd & parking information")
@@ -277,11 +352,7 @@ struct RootView: View {
     }
 
     private func shortcut(_ title: String, asset: String, section: HomeSheet, data: Data) -> some View {
-        Button {
-            if let place = try? JSONDecoder().decode(JourneyPlace.self, from: data) {
-                launch = JourneyLaunch(destination: place)
-            } else { sheet = section }
-        } label: {
+        Button { openShortcut(section, data: data) } label: {
             HStack(spacing: 5) {
                 Image(asset).resizable().scaledToFit().frame(width: 19, height: 19)
                 Text(title).font(.system(size: 14, weight: .semibold))
@@ -314,8 +385,7 @@ struct RootView: View {
 private struct HomePill: ViewModifier {
     var radius: CGFloat = 24
     func body(content: Content) -> some View {
-        content.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius))
-            .background(.white.opacity(0.45), in: RoundedRectangle(cornerRadius: radius))
+        content.heroGlass(.card, radius: radius)
             .overlay { RoundedRectangle(cornerRadius: radius).stroke(.white.opacity(0.9), lineWidth: 1) }
             .shadow(color: .black.opacity(0.04), radius: 3, y: 2)
     }

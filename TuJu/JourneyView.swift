@@ -10,16 +10,11 @@ enum JourneyInk {
 
 extension View {
     func journeyCard(_ radius: CGFloat = 20) -> some View {
-        self.background(.white.opacity(0.88), in: RoundedRectangle(cornerRadius: radius))
-            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(JourneyInk.line.opacity(0.85), lineWidth: 1))
+        heroGlass(.card, radius: radius)
     }
 
     func journeyPanel() -> some View {
-        self.background(
-            LinearGradient(colors: [JourneyInk.sky.opacity(0.97), .white.opacity(0.96)], startPoint: .top, endPoint: .bottom),
-            in: RoundedRectangle(cornerRadius: 27)
-        ).overlay(RoundedRectangle(cornerRadius: 27).strokeBorder(.white.opacity(0.9)))
-            .shadow(color: JourneyInk.navy.opacity(0.12), radius: 12, y: 6)
+        heroGlass(.panel, radius: 27)
     }
 }
 
@@ -116,6 +111,7 @@ struct JourneyView: View {
             }
         }
         .foregroundStyle(JourneyInk.navy)
+        .buttonStyle(HeroUIGlassButtonStyle())
         .tint(JourneyInk.blue)
         .preferredColorScheme(.light)
         .onAppear {
@@ -190,7 +186,7 @@ struct JourneyView: View {
                         .accessibilityLabel("Clear search")
                 }
             }
-            .padding(.horizontal, 15).frame(minHeight: 46).journeyCard(30)
+            .padding(.horizontal, 15).frame(minHeight: 46).heroGlass(.field, radius: 30, focused: typing)
         }
         .padding(.horizontal, 10)
     }
@@ -238,7 +234,7 @@ struct JourneyView: View {
                                 Spacer()
                                 Image(systemName: "chevron.right").font(.caption2)
                             }.padding(.vertical, 9).padding(.horizontal, 5).contentShape(Rectangle())
-                        }.buttonStyle(.plain)
+                        }.buttonStyle(HeroUIGlassButtonStyle())
                     }
                     if !searching && visiblePlaces.isEmpty {
                         Text(savedOnly ? "Save a destination using its heart button." : (searchIssue ?? "No places found. Try a different name."))
@@ -259,7 +255,7 @@ struct JourneyView: View {
             Label(title, systemImage: icon).font(.caption.weight(.semibold)).frame(maxWidth: .infinity)
                 .frame(minHeight: 40).background(active ? JourneyInk.line : .white.opacity(0.86), in: Capsule())
                 .overlay(Capsule().strokeBorder(JourneyInk.line))
-        }.buttonStyle(.plain)
+        }.buttonStyle(HeroUIGlassButtonStyle())
     }
 
     private func routeHeader(_ destination: JourneyPlace) -> some View {
@@ -307,7 +303,7 @@ struct JourneyView: View {
                             .padding(.vertical, 9).frame(maxWidth: .infinity)
                             .background(index == planIndex ? JourneyInk.sky : .white, in: RoundedRectangle(cornerRadius: 16))
                             .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(index == planIndex ? .blue : JourneyInk.line, lineWidth: index == planIndex ? 2 : 1))
-                        }.buttonStyle(.plain).accessibilityAddTraits(index == planIndex ? .isSelected : [])
+                        }.buttonStyle(HeroUIGlassButtonStyle()).accessibilityAddTraits(index == planIndex ? .isSelected : [])
                     }
                 }
                 if demo && plan.hasTolls {
@@ -321,7 +317,7 @@ struct JourneyView: View {
                             }.padding(.horizontal, 30)
                             Text("Slow section · Sample traffic").font(.caption2).foregroundStyle(.secondary)
                         }.padding(8).frame(maxWidth: .infinity).journeyCard(16)
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(HeroUIGlassButtonStyle())
                 }
                 Button { sheet = .details } label: {
                     VStack(spacing: 8) {
@@ -349,7 +345,7 @@ struct JourneyView: View {
                             Text(plan.name).font(.caption).frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }.padding(11).journeyCard(17)
-                }.buttonStyle(.plain)
+                }.buttonStyle(HeroUIGlassButtonStyle())
                 Button { stopDetailName = nil; sheet = .stops } label: {
                     HStack {
                         Image(systemName: "signpost.right")
@@ -360,7 +356,7 @@ struct JourneyView: View {
                         }
                         Spacer(); Image(systemName: "chevron.right").font(.caption)
                     }.padding(10).journeyCard(16)
-                }.buttonStyle(.plain)
+                }.buttonStyle(HeroUIGlassButtonStyle())
                 HStack(spacing: 8) {
                     Button(demo ? "Toll details" : "Steps") { sheet = .details }
                         .frame(maxWidth: .infinity, minHeight: 44).journeyCard(24)
