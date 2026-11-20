@@ -6,13 +6,24 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2D36522D5643CDEB2B8F03FB /* libPods-TuJu.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 2027141CB09D2FDB4206EC13 /* libPods-TuJu.a */; };
+		707B2CADBC1E50763868E19D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 275E55DEA55B5BEEC0A3FBCB /* PrivacyInfo.xcprivacy */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		2027141CB09D2FDB4206EC13 /* libPods-TuJu.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-TuJu.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		275E55DEA55B5BEEC0A3FBCB /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		70EC2BDAE2BE7B4BC1FD3B8D /* Pods-TuJu.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TuJu.debug.xcconfig"; path = "Target Support Files/Pods-TuJu/Pods-TuJu.debug.xcconfig"; sourceTree = "<group>"; };
 		74754A750000000000000001 /* TuJu.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TuJu.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D6DE5BABB164C33D9AA0E6A7 /* Pods-TuJu.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-TuJu.release.xcconfig"; path = "Target Support Files/Pods-TuJu/Pods-TuJu.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		74754A750000000000000002 /* TuJu */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = TuJu;
 			sourceTree = "<group>";
 		};
@@ -22,7 +33,9 @@
 		74754A750000000000000003 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
-			files = ();
+			files = (
+				2D36522D5643CDEB2B8F03FB /* libPods-TuJu.a in Frameworks */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -33,13 +46,36 @@
 			children = (
 				74754A750000000000000002 /* TuJu */,
 				74754A750000000000000005 /* Products */,
+				275E55DEA55B5BEEC0A3FBCB /* PrivacyInfo.xcprivacy */,
+				C937A6DB97D5EA142F9E4CE5 /* Pods */,
+				DE6CB2875BEAB775E7765DFF /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
 		74754A750000000000000005 /* Products */ = {
 			isa = PBXGroup;
-			children = (74754A750000000000000001 /* TuJu.app */,);
+			children = (
+				74754A750000000000000001 /* TuJu.app */,
+			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C937A6DB97D5EA142F9E4CE5 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				70EC2BDAE2BE7B4BC1FD3B8D /* Pods-TuJu.debug.xcconfig */,
+				D6DE5BABB164C33D9AA0E6A7 /* Pods-TuJu.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		DE6CB2875BEAB775E7765DFF /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				2027141CB09D2FDB4206EC13 /* libPods-TuJu.a */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -49,15 +85,23 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 74754A75000000000000000C /* Build configuration list for PBXNativeTarget "TuJu" */;
 			buildPhases = (
+				ACFAC95B157F5A9D1D50F3E9 /* [CP] Check Pods Manifest.lock */,
 				74754A750000000000000007 /* Sources */,
 				74754A750000000000000003 /* Frameworks */,
 				74754A750000000000000008 /* Resources */,
+				DEB9EE1C34ADD88965EF8A6E /* Prepare Catalyst framework layout */,
+				69E3303D1BABA83AC1ADF361 /* [CP] Embed Pods Frameworks */,
+				580C0188346B3A3242AD54C1 /* [CP] Copy Pods Resources */,
+				4EEA9D78F2A81B4167E90F68 /* Bundle TuJu React Native controls */,
 			);
-			buildRules = ();
-			dependencies = ();
-			fileSystemSynchronizedGroups = (74754A750000000000000002 /* TuJu */,);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				74754A750000000000000002 /* TuJu */,
+			);
 			name = TuJu;
-			packageProductDependencies = ();
 			productName = TuJu;
 			productReference = 74754A750000000000000001 /* TuJu.app */;
 			productType = "com.apple.product-type.application";
@@ -72,20 +116,27 @@
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
-					74754A750000000000000006 = {CreatedOnToolsVersion = 16.0; };
+					74754A750000000000000006 = {
+						CreatedOnToolsVersion = 16.0;
+					};
 				};
 			};
 			buildConfigurationList = 74754A75000000000000000D /* Build configuration list for PBXProject "TuJu" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
-			knownRegions = (en, Base,);
+			knownRegions = (
+				en,
+				Base,
+			);
 			mainGroup = 74754A750000000000000004;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 74754A750000000000000005 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			targets = (74754A750000000000000006 /* TuJu */,);
+			targets = (
+				74754A750000000000000006 /* TuJu */,
+			);
 		};
 /* End PBXProject section */
 
@@ -93,16 +144,119 @@
 		74754A750000000000000008 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = ();
+			files = (
+				707B2CADBC1E50763868E19D /* PrivacyInfo.xcprivacy in Resources */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4EEA9D78F2A81B4167E90F68 /* Bundle TuJu React Native controls */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Bundle TuJu React Native controls";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/main.jsbundle",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/TuJuComponentNotices.txt",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/Pods-TuJu-acknowledgements.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "exec \"$SRCROOT/NativeUI/scripts/bundle-xcode.sh\"";
+		};
+		580C0188346B3A3242AD54C1 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TuJu/Pods-TuJu-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TuJu/Pods-TuJu-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TuJu/Pods-TuJu-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		69E3303D1BABA83AC1ADF361 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TuJu/Pods-TuJu-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-TuJu/Pods-TuJu-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TuJu/Pods-TuJu-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		ACFAC95B157F5A9D1D50F3E9 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-TuJu-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		DEB9EE1C34ADD88965EF8A6E /* Prepare Catalyst framework layout */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Prepare Catalyst framework layout";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "exec \"$SRCROOT/NativeUI/scripts/prepare-catalyst-frameworks.sh\"";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		74754A750000000000000007 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
-			files = ();
+			files = (
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
@@ -111,36 +265,65 @@
 		74754A750000000000000010 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_ENABLE_MODULES = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_TESTABILITY = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
+				PODFILE_DIR = "$(SRCROOT)";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../NativeUI/node_modules/react-native";
 				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				USE_HERMES = true;
 			};
 			name = Debug;
 		};
 		74754A750000000000000011 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++20";
 				CLANG_ENABLE_MODULES = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				OTHER_CFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(inherited)",
+					"-DRCT_REMOVE_LEGACY_ARCH=1",
+				);
+				PODFILE_DIR = "$(SRCROOT)";
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../NativeUI/node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
 		74754A750000000000000012 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 70EC2BDAE2BE7B4BC1FD3B8D /* Pods-TuJu.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = NO;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = TuJu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -149,12 +332,19 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LIBRARY_SEARCH_PATHS = (
+					"$(SDKROOT)/usr/lib/swift",
+					"$(SDKROOT)/System/iOSSupport/usr/lib/swift",
+					"$(inherited)",
+				);
 				MARKETING_VERSION = 1.0;
+				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.satnaka.tuju;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = TuJu/ReactNative/TuJuReactHost.h;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				"TARGETED_DEVICE_FAMILY[sdk=macosx*]" = 2;
@@ -163,10 +353,13 @@
 		};
 		74754A750000000000000013 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = D6DE5BABB164C33D9AA0E6A7 /* Pods-TuJu.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = TuJu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
@@ -175,12 +368,19 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LIBRARY_SEARCH_PATHS = (
+					"$(SDKROOT)/usr/lib/swift",
+					"$(SDKROOT)/System/iOSSupport/usr/lib/swift",
+					"$(inherited)",
+				);
 				MARKETING_VERSION = 1.0;
+				PRESERVE_DEAD_CODE_INITS_AND_TERMS = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = com.satnaka.tuju;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = TuJu/ReactNative/TuJuReactHost.h;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 				"TARGETED_DEVICE_FAMILY[sdk=macosx*]" = 2;
@@ -192,13 +392,19 @@
 /* Begin XCConfigurationList section */
 		74754A75000000000000000C /* Build configuration list for PBXNativeTarget "TuJu" */ = {
 			isa = XCConfigurationList;
-			buildConfigurations = (74754A750000000000000012 /* Debug */, 74754A750000000000000013 /* Release */,);
+			buildConfigurations = (
+				74754A750000000000000012 /* Debug */,
+				74754A750000000000000013 /* Release */,
+			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		74754A75000000000000000D /* Build configuration list for PBXProject "TuJu" */ = {
 			isa = XCConfigurationList;
-			buildConfigurations = (74754A750000000000000010 /* Debug */, 74754A750000000000000011 /* Release */,);
+			buildConfigurations = (
+				74754A750000000000000010 /* Debug */,
+				74754A750000000000000011 /* Release */,
+			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};

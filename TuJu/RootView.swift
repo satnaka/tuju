@@ -18,24 +18,23 @@ enum TuJuTab: String, CaseIterable {
 struct TuJuTabBar: View {
     let selected: TuJuTab
     let onSelect: (TuJuTab) -> Void
-    @ScaledMetric(relativeTo: .body) private var fontScale: CGFloat = 1
     @State private var controlHeight: CGFloat = 56
-    @State private var useNativeControls = false
+    @State private var useSwiftUITabs = false
 
     var body: some View {
         Group {
-            if useNativeControls {
+            if useSwiftUITabs {
                 nativeTabs
             } else {
-                HeroUIControlSurface(
-                    state: HeroUIState(surface: "tabs", selected: selected.rawValue, fontScale: Double(fontScale)),
+                ReactNativeControlSurface(
+                    state: HeroUIState(surface: "tabs", selected: selected.rawValue),
                     onAction: { action in
                         if let tab = TuJuTab.allCases.first(where: { "tab" + $0.rawValue == action }) {
                             onSelect(tab)
                         }
                     },
                     onHeight: { controlHeight = $0 },
-                    onUnavailable: { useNativeControls = true }
+                    onUnavailable: { useSwiftUITabs = true }
                 )
                 .frame(height: controlHeight)
             }
@@ -89,8 +88,7 @@ struct RootView: View {
     @State private var pendingTab: TuJuTab?
     @State private var cardExpanded = true
     @State private var panelHeight: CGFloat = 289
-    @State private var useNativePanel = false
-    @ScaledMetric(relativeTo: .body) private var fontScale: CGFloat = 1
+    @State private var useSwiftUIPanel = false
     @State private var camera: MapCameraPosition = .region(Self.kualaLumpur)
     @StateObject private var location = ExploreLocation()
     @ObservedObject private var history = JourneyHistory.shared
@@ -261,15 +259,15 @@ struct RootView: View {
     }
 
     @ViewBuilder private func journeyControls(maxHeight: CGFloat) -> some View {
-        if useNativePanel {
+        if useSwiftUIPanel {
             exploreCard
         } else {
-            HeroUIControlSurface(
+            ReactNativeControlSurface(
                 state: HeroUIState(surface: "journey", expanded: cardExpanded, recentName: recent.name,
-                                   recentDetail: recentDetail, fontScale: Double(fontScale)),
+                                   recentDetail: recentDetail),
                 onAction: performHomeAction,
                 onHeight: { panelHeight = $0 },
-                onUnavailable: { useNativePanel = true }
+                onUnavailable: { useSwiftUIPanel = true }
             )
             .frame(height: min(panelHeight, maxHeight))
             .padding(.horizontal, 10)

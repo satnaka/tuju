@@ -1,0 +1,8 @@
+nodeLinker: hoisted
+autoInstallPeers: false
+allowBuilds:
+  heroui-native-pro: true
+  '@zowe/secrets-for-zowe-sdk': false
+minimumReleaseAgeExclude:
+  - react-native-reanimated@4.8.0
+  - react-native-worklets@0.14.0

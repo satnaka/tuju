@@ -4,3 +4,8 @@ build/
 xcuserdata/
 *.xcuserstate
 *.xcresult
+Pods/
+node_modules/
+.xcode.env.local
+.bundle/
+vendor/bundle/
