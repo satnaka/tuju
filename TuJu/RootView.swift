@@ -76,6 +76,7 @@ struct RootView: View {
 
     private static let kualaLumpur = MKCoordinateRegion(center: .init(latitude: 3.150, longitude: 101.707),
                                                       latitudinalMeters: 4500, longitudinalMeters: 4500)
+    private var xp: Int { TuJuRewardsLedger.decode(ledger)?.xp ?? 120 }
     private var recent: JourneyPlace { history.recent.first ?? .klSentral }
 
     var body: some View {
@@ -173,12 +174,19 @@ struct RootView: View {
                     HStack(spacing: 3) {
                         ZStack {
                             Image("HomeRewardTrack").resizable()
-                            Image("HomeRewardProgress").resizable()
-                            Image("HomeTrophy").resizable().scaledToFit().padding(4)
-                        }.frame(width: 26, height: 26)
+                            if xp == 120 {
+                                Image("HomeRewardProgress").resizable()
+                                    .frame(width: 4.86, height: 2.50).offset(x: 2.43, y: -12.72)
+                            } else {
+                                Circle().inset(by: 0.8)
+                                    .trim(from: 0, to: min(1, CGFloat(xp) / 2000))
+                                    .stroke(Color.blue, lineWidth: 1.6).rotationEffect(.degrees(-90))
+                            }
+                            Image("HomeTrophy").resizable().scaledToFit().frame(width: 21, height: 21)
+                        }.frame(width: 28, height: 28)
                         VStack(alignment: .leading, spacing: 1) {
                             Text("Rewards").font(.system(size: 11, weight: .semibold))
-                            Text("\(TuJuRewardsLedger.decode(ledger)?.xp ?? 120) / 2K XP").font(.system(size: 9))
+                            Text("\(xp) / 2K XP").font(.system(size: 9))
                         }
                     }.frame(width: min(102, geo.size.width * 0.28), height: 40).modifier(HomePill())
                 }

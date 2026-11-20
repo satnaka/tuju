@@ -6,7 +6,7 @@ struct JourneyDriveView: View {
     let plan: JourneyPlan
     let destination: JourneyPlace
     let demo: Bool
-    let onRoad: () -> Void
+    let onRoad: (JourneyEstimate) -> Void
     let onDetails: () -> Void
     let onStops: () -> Void
     let onMaps: () -> Void
@@ -20,48 +20,42 @@ struct JourneyDriveView: View {
     @State private var current = 0
     @State private var expanded = true
     @State private var event: DriveEvent?
+    @State private var showMapSettings = false
     @State private var reporting = false
     @State private var reported = false
     @State private var narrator = AVSpeechSynthesizer()
 
     private var step: JourneyStep? { plan.steps.indices.contains(current) ? plan.steps[current] : nil }
-    private var progress: Double {
-        if demo { return min(1, 0.42 + 0.58 * Double(current) / Double(max(1, plan.steps.count - 1))) }
-        return Double(current) / Double(max(1, plan.steps.count - 1))
-    }
-    private var duration: String {
-        if demo && current == 0 { return simple ? "22 min" : JourneyFormat.time(plan.duration) }
-        return JourneyFormat.time(max(60, plan.duration * (1 - Double(current) / Double(max(1, plan.steps.count)))))
-    }
-    private var etaDistance: String {
-        if demo && simple && current == 0 { return "12 km" }
-        return JourneyFormat.distance(plan.distance * (1 - Double(current) / Double(max(1, plan.steps.count))))
-    }
+    private var estimate: JourneyEstimate { plan.estimate(atStep: current) }
+
     private var cards: some View {
         VStack(spacing: 8) {
             Button { expanded.toggle() } label: {
                 VStack(spacing: 4) {
                     Capsule().fill(JourneyInk.blue.opacity(0.42)).frame(width: 42, height: 4)
-                    Text(duration).font(.title.bold())
-                    Text(etaDistance + (demo ? " · Arrive by 10:53 AM" : " · Estimated journey"))
+                    Text(JourneyFormat.time(estimate.duration)).font(.title.bold())
+                    Text(JourneyFormat.distance(estimate.distance) + (demo ? " · Arrive by " + estimate.sampleArrival : " · Estimated journey"))
                         .font(.subheadline.weight(.semibold)).foregroundStyle(JourneyInk.navy.opacity(0.73))
                 }.frame(maxWidth: .infinity).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityHint("Expand or collapse journey controls")
             if expanded {
-                HStack { Text("\(Int((progress * 100).rounded()))% complete").font(.caption2); Spacer() }
+                HStack { Text("\(Int((estimate.progress * 100).rounded()))% complete").font(.caption2); Spacer() }
                 if demo {
-                    HStack(spacing: 4) {
-                        ProgressView(value: progress).tint(.blue)
-                        ForEach(DriveEvent.allCases) { item in
-                            Button { event = item } label: {
-                                Image(systemName: item.symbol).frame(width: 32, height: 32)
-                                    .foregroundStyle(item == .accident ? .red : JourneyInk.blue)
-                                    .background(.white, in: Circle())
-                            }.accessibilityLabel(item.title)
-                        }
-                        Image(systemName: "flag.checkered").font(.caption)
-                    }.frame(height: 26)
-                } else { ProgressView(value: progress) }
+                    GeometryReader { track in
+                        ZStack(alignment: .leading) {
+                            ProgressView(value: estimate.progress).tint(.blue).padding(.trailing, 19)
+                            ForEach(Array(DriveEvent.allCases.enumerated()), id: \.element.id) { index, item in
+                                Button { event = item } label: {
+                                    Image(item.asset).resizable().scaledToFit().frame(width: 27, height: 27)
+                                        .frame(width: 40, height: 40).contentShape(Rectangle())
+                                }.accessibilityLabel(item.title)
+                                    .position(x: track.size.width * [0.50, 0.65, 0.84][index], y: track.size.height / 2)
+                            }
+                            HStack { Spacer(); Image("JourneyEndFlag").resizable().frame(width: 14, height: 14) }
+                                .allowsHitTesting(false)
+                        }.frame(height: track.size.height)
+                    }.frame(height: 27)
+                } else { ProgressView(value: estimate.progress) }
                 HStack(spacing: 8) {
                     driveButton("Exit", symbol: "xmark", action: onExit)
                     if demo {
@@ -84,6 +78,7 @@ struct JourneyDriveView: View {
         }
         .foregroundStyle(JourneyInk.navy).tint(JourneyInk.blue)
         .onDisappear { narrator.stopSpeaking(at: .immediate) }
+        .sheet(isPresented: $showMapSettings) { TuJuMapAppearanceView() }
         .alert(item: $event) { event in
             Alert(title: Text(event.title), message: Text(event.detail), dismissButton: .default(Text("Back to route")))
         }
@@ -108,9 +103,9 @@ struct JourneyDriveView: View {
                 VStack(spacing: 8) {
                     guidance
                     if demo {
-                        Button(action: onRoad) {
+                        Button { onRoad(estimate) } label: {
                             HStack(spacing: 15) {
-                                Image(systemName: "bell").font(.title2).foregroundStyle(.green)
+                                Image("JourneyBestLane").resizable().scaledToFit().frame(width: 25, height: 25)
                                     .frame(width: 44, height: 44).background(.green.opacity(0.11), in: Circle())
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text("Best Lane").font(.headline)
@@ -128,6 +123,7 @@ struct JourneyDriveView: View {
                         VStack(spacing: 8) {
                             control("speaker.wave.2", label: "Read this instruction", action: speak)
                             control("square.2.layers.3d", label: "Switch to Simple Mode") { simple = true }
+                            control("gearshape", label: "Map appearance") { showMapSettings = true }
                         }
                     }.padding(.horizontal, 7)
                     cards
@@ -150,8 +146,8 @@ struct JourneyDriveView: View {
                 if demo { speedBadge.padding(10) }
             }
             HStack {
-                driveButton("R&R ahead", symbol: "signpost.right", action: onStops)
-                driveButton(demo ? "Road alerts" : "Steps", symbol: "exclamationmark.triangle") {
+                simpleAction("R&R ahead", image: "JourneyRestSign", subtitle: demo ? "12 km to next stop" : "Find rest stops", action: onStops)
+                simpleAction(demo ? "Road alerts" : "Steps", image: "JourneyWarningSign", subtitle: demo ? "Accident · +8 min" : "Review directions") {
                     if demo { event = .accident } else { onDetails() }
                 }
             }
@@ -202,6 +198,19 @@ struct JourneyDriveView: View {
             .accessibilityLabel("Illustrated speed 60 kilometres an hour" + (speedLimit ? ", sample speed limit 80" : ""))
     }
 
+    private func simpleAction(_ title: String, image: String, subtitle: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 5) {
+                    Image(image).resizable().scaledToFit().frame(width: 19, height: 19)
+                    Text(title).font(.subheadline.bold()); Spacer()
+                    Image(systemName: "chevron.right").font(.caption2)
+                }
+                Text(subtitle).font(.caption).foregroundStyle(.secondary)
+            }.padding(10).frame(maxWidth: .infinity, minHeight: 64).journeyCard(16)
+        }.buttonStyle(.plain)
+    }
+
     private func control(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol).font(.title3).frame(width: 46, height: 46).journeyCard(15)
@@ -236,8 +245,8 @@ struct JourneyDriveView: View {
 private enum DriveEvent: String, CaseIterable, Identifiable {
     case lights, accident, camera
     var id: Self { self }
-    var symbol: String {
-        switch self { case .lights: "trafficlight"; case .accident: "exclamationmark.triangle"; case .camera: "camera" }
+    var asset: String {
+        switch self { case .lights: "JourneyEventLight"; case .accident: "JourneyEventAccident"; case .camera: "JourneyEventCamera" }
     }
     var title: String {
         switch self { case .lights: "Traffic lights"; case .accident: "Accident ahead"; case .camera: "AES speed camera" }

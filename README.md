@@ -4,7 +4,7 @@ TuJu is an interactive iPhone navigation concept set in Kuala Lumpur. It uses th
 
 ## Try the concept
 
-Open `TuJu.xcodeproj` in Xcode 16 or later, select the **TuJu** scheme and an iPhone simulator with iOS 17 or later, then press **Run**.
+Open `TuJu.xcodeproj` in Xcode 16 or later, select the **TuJu** scheme and an iPhone simulator with iOS 17 or later, then press **Run**. To try the same screens on a Mac while an iOS simulator downloads, select **My Mac (Mac Catalyst)** and run the TuJu scheme.
 
 1. From **Home**, tap **Search places or addresses** and choose **One Utama**.
 2. Compare the three routes. Try **Avoid tolls**, inspect the toll details or add an R&R stop.

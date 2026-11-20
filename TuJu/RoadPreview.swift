@@ -3,7 +3,13 @@ import SwiftUI
 /// A self-contained walkthrough of the toll and flyover designs.
 struct TuJuRoadPreviewView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var scene: Scene = .approach
+    let estimate: JourneyEstimate
+    @State private var scene: Scene
+
+    init(estimate: JourneyEstimate, startAtFlyover: Bool) {
+        self.estimate = estimate
+        _scene = State(initialValue: startAtFlyover ? .flyover(nil) : .approach)
+    }
 
     private enum Level: CaseIterable {
         case flyover, lower
@@ -161,10 +167,10 @@ struct TuJuRoadPreviewView: View {
 
     private var tripCard: some View {
         VStack(spacing: 6) {
-            Text("22 min").font(.title2.bold())
-            Text("12 km · Arrive by 10:53 AM").font(.subheadline)
-            ProgressView(value: 0.42)
-                .accessibilityLabel("Sample journey, 42 percent complete")
+            Text(JourneyFormat.time(estimate.duration)).font(.title2.bold())
+            Text(JourneyFormat.distance(estimate.distance) + " · Arrive by " + estimate.sampleArrival).font(.subheadline)
+            ProgressView(value: estimate.progress)
+                .accessibilityLabel("Sample journey").accessibilityValue(estimate.progress.formatted(.percent))
             switch scene {
             case .approach:
                 action("Preview toll lanes") { scene = .toll }

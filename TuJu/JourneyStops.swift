@@ -10,9 +10,9 @@ private struct ConceptStop: Identifiable {
     var id: String { name }
     var place: JourneyPlace { .init(name: name, subtitle: "Concept stop", latitude: 3.14, longitude: 101.62) }
 
-    static let siteA = Self(name: "R&R Sungai Buloh", capacity: "8 / 120 spaces", crowd: "Almost full", color: .red, travel: "12 km · 15 min")
-    static let siteB = Self(name: "R&R USJ", capacity: "42 / 100 spaces", crowd: "Plenty of spaces", color: .green, travel: "21 km · 25 min")
-    static let siteC = Self(name: "R&R Beranang", capacity: "23 spaces", crowd: "Moderate", color: .orange, travel: "27 km · 31 min")
+    static let siteA = Self(name: "R&R Sungai Buloh", capacity: "8 / 120 spaces", crowd: "Almost full", color: Color(red: 0.65, green: 0.08, blue: 0.17), travel: "12 km · 15 min")
+    static let siteB = Self(name: "R&R USJ", capacity: "42 / 100 spaces", crowd: "Plenty of spaces", color: Color(red: 0.02, green: 0.39, blue: 0.25), travel: "21 km · 25 min")
+    static let siteC = Self(name: "R&R Beranang", capacity: "23 spaces", crowd: "Moderate", color: Color(red: 0.60, green: 0.25, blue: 0.02), travel: "27 km · 31 min")
 }
 
 struct JourneyStopsView: View {
@@ -153,7 +153,7 @@ struct JourneyStopsView: View {
         HStack {
             Image(systemName: "parkingsign.square.fill"); Text(stop.crowd); Spacer(); Text(stop.capacity)
         }.font(.caption.weight(.semibold)).padding(8).foregroundStyle(.white)
-            .background(stop.color.mixForJourney, in: RoundedRectangle(cornerRadius: 9))
+            .background(stop.color, in: RoundedRectangle(cornerRadius: 9))
     }
 
     @ViewBuilder private var liveList: some View {
@@ -185,10 +185,6 @@ struct JourneyStopsView: View {
     }
 }
 
-private extension Color {
-    var mixForJourney: Color { self == .green ? Color(red: 0.02, green: 0.39, blue: 0.25) : (self == .red ? Color(red: 0.65, green: 0.08, blue: 0.17) : Color(red: 0.60, green: 0.25, blue: 0.02)) }
-}
-
 struct JourneyDetailsView: View {
     let plan: JourneyPlan
     let destination: JourneyPlace
@@ -203,8 +199,8 @@ struct JourneyDetailsView: View {
                     if demo {
                         detail("trafficlight", "8 traffic lights", "4 in the first 12 km · 4 near the destination")
                         detail("camera", "2 AES speed cameras", "First camera in 16 km · Second in 42 km")
-                        detail("cloud.rain", "Rain likely on part of the route", "Light rain between km 18 and 27 · Dry elsewhere")
-                        detail("building.columns", plan.hasTolls ? "1 toll plaza · RM" + (plan.name == "LDP" ? "9.60" : "2.20") + " total" : "No tolls", plan.hasTolls ? plan.name + " toll plaza" : "This route avoids the toll plaza.")
+                        detail(plan.hasTolls ? "cloud.rain" : "sun.max", plan.hasTolls ? "Rain likely on part of the route" : "Dry forecast", plan.hasTolls ? "Light rain between km 18 and 27 · Dry elsewhere" : "Dry conditions along the concept route")
+                        detail("building.columns", plan.hasTolls ? "1 toll plaza · RM" + (plan.name == "LDP" ? "9.60" : "2.20") + " total" : "No tolls", plan.hasTolls ? plan.name + " toll plaza" : "No toll plazas on this route.")
                         if plan.hasTolls {
                             HStack {
                                 Text("Payment").font(.caption)

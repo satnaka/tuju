@@ -48,6 +48,7 @@ struct JourneyView: View {
     @State private var attempts = 0
     @State private var sheet: JourneySheet?
     @State private var driving = false
+    @State private var roadEstimate: JourneyEstimate?
     @State private var startedID: UUID?
     @State private var openStopsAfterRouting = false
     @State private var stopDetailName: String?
@@ -86,7 +87,7 @@ struct JourneyView: View {
     var body: some View {
         Group {
             if driving, let plan, let destination {
-                JourneyDriveView(plan: plan, destination: destination, demo: demo, onRoad: { sheet = .road },
+                JourneyDriveView(plan: plan, destination: destination, demo: demo, onRoad: { estimate in roadEstimate = estimate; sheet = .road },
                                  onDetails: { sheet = .details }, onStops: { stopDetailName = nil; sheet = .stops }, onMaps: openMaps,
                                  onExit: { driving = false }, onFinish: {
                     if demo, let startedID { TuJuRewardsLedger.creditCompletedJourney(id: startedID, destination: destination.name) }
@@ -102,10 +103,9 @@ struct JourneyView: View {
                             Spacer(minLength: 0)
                             if destination != nil {
                                 ScrollView { routePanel }.scrollIndicators(.hidden)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .frame(maxHeight: max(230, bounds.size.height * 0.66), alignment: .bottom)
+                                    .frame(height: min(plan?.hasTolls == false && demo ? 365 : 475, max(200, bounds.size.height * 0.65)))
                             } else {
-                                searchPanel.frame(maxHeight: max(160, bounds.size.height * (typing ? 0.85 : 0.55)))
+                                searchPanel.frame(height: min(345, max(150, bounds.size.height * (typing ? 0.77 : 0.48))))
                             }
                             if !typing, let onTab { TuJuTabBar(selected: .home, onSelect: onTab) }
                         }
@@ -133,7 +133,10 @@ struct JourneyView: View {
         .sheet(item: $sheet) { item in
             switch item {
             case .ride: TuJuRideView(destination: destination?.name ?? "One Utama")
-            case .road: TuJuRoadPreviewView()
+            case .road:
+                if let plan, let roadEstimate {
+                    TuJuRoadPreviewView(estimate: roadEstimate, startAtFlyover: plan.name != "LDP")
+                }
             case .details:
                 if let plan, let destination {
                     JourneyDetailsView(plan: plan, destination: destination, demo: demo, onClose: { sheet = nil })
@@ -158,8 +161,12 @@ struct JourneyView: View {
             GeometryReader { bounds in
                 ZStack {
                     Image("KualaLumpurMap").resizable().scaledToFill()
-                    if destination != nil {
-                        Image("JourneySamplePath").resizable().scaledToFill()
+                    if let plan, destination != nil {
+                        Image(plan.hasTolls ? "JourneySamplePath" : "JourneyTollFreePath").resizable().scaledToFill()
+                        Text(shortTime(plan.duration) + " · " + (plan.hasTolls ? sampleFare(plan).replacingOccurrences(of: " toll", with: "") : "No toll"))
+                            .font(.caption2.weight(.semibold)).foregroundStyle(JourneyInk.blue)
+                            .padding(.horizontal, 12).padding(.vertical, 5).background(.white, in: Capsule())
+                            .position(x: bounds.size.width * (plan.hasTolls ? 0.45 : 0.67), y: bounds.size.height * (plan.hasTolls ? 0.3 : 0.39))
                     }
                 }
                 .frame(width: bounds.size.width, height: bounds.size.height).clipped()
@@ -197,7 +204,7 @@ struct JourneyView: View {
         let suggestions = JourneyPlace.suggestions.filter {
             ($0.name + " " + $0.subtitle).localizedCaseInsensitiveContains(queryText)
         }
-        return (results + suggestions.filter { place in !results.contains(where: { $0.name.caseInsensitiveCompare(place.name) == .orderedSame }) })
+        return suggestions + results.filter { place in !suggestions.contains(where: { $0.name.caseInsensitiveCompare(place.name) == .orderedSame }) }
     }
 
     private var searchPanel: some View {
@@ -245,7 +252,6 @@ struct JourneyView: View {
             }.scrollDismissesKeyboard(.interactively)
         }
         .padding(.horizontal, 17).padding(.vertical, 13).journeyPanel()
-        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func category(_ title: String, _ icon: String, active: Bool, action: @escaping () -> Void) -> some View {
@@ -262,9 +268,9 @@ struct JourneyView: View {
                 backButton { self.destination = nil; stop = nil; plans = []; demo = false; startedID = nil }
                 VStack(spacing: 5) {
                     Text(demo ? "Your location · Concept" : (origin == nil ? "From KL Sentral" : "Your location"))
-                        .font(.caption).foregroundStyle(.secondary)
-                    Text(demo ? "One Utama · East Entrance" : destination.name).font(.subheadline.bold()).lineLimit(2)
-                }.frame(maxWidth: .infinity).padding(10).journeyCard(23)
+                        .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 38).journeyCard(22)
+                    Text(demo ? "One Utama · East Entrance" : destination.name).font(.subheadline.bold()).lineLimit(2).frame(maxWidth: .infinity, minHeight: 42).journeyCard(22)
+                }.frame(maxWidth: .infinity)
                 let saved = history.saved.contains { $0.id == destination.id }
                 Button { history.toggleSaved(destination) } label: {
                     Image(systemName: saved ? "heart.fill" : "heart").frame(width: 44, height: 44).journeyCard(22)
@@ -304,7 +310,7 @@ struct JourneyView: View {
                         }.buttonStyle(.plain).accessibilityAddTraits(index == planIndex ? .isSelected : [])
                     }
                 }
-                if demo {
+                if demo && plan.hasTolls {
                     Button { sheet = .details } label: {
                         VStack(spacing: 4) {
                             Label("Traffic now · +8 min delay", systemImage: "trafficlight").font(.caption.weight(.semibold))
@@ -327,7 +333,7 @@ struct JourneyView: View {
                             HStack {
                                 metric("8 lights", "trafficlight")
                                 metric("2 AES", "camera")
-                                metric("Rain likely", "cloud.rain")
+                                metric(plan.hasTolls ? "Rain likely" : "Dry forecast", plan.hasTolls ? "cloud.rain" : "sun.max")
                             }
                             HStack {
                                 Text(plan.hasTolls ? "1 toll plaza" : "No tolls").font(.caption)
@@ -356,7 +362,8 @@ struct JourneyView: View {
                     }.padding(10).journeyCard(16)
                 }.buttonStyle(.plain)
                 HStack(spacing: 8) {
-                    Button(demo ? "Toll details" : "Steps") { sheet = demo ? .road : .details }.frame(maxWidth: .infinity, minHeight: 44).journeyCard(24)
+                    Button(demo ? "Toll details" : "Steps") { sheet = .details }
+                        .frame(maxWidth: .infinity, minHeight: 44).journeyCard(24)
                     Button(demo ? "Start · \(shortTime(plan.duration))" : "Preview route") {
                         if demo, startedID == nil { startedID = history.start(plan, to: destination ?? .oneUtama, demo: true) }
                         driving = true

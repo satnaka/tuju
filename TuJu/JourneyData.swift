@@ -133,6 +133,13 @@ struct JourneyPlan: Identifiable {
         }
     }
 
+    func estimate(atStep index: Int) -> JourneyEstimate {
+        let intervals = max(1, steps.count - 1)
+        let progress = min(1, max(0, Double(index) / Double(intervals)))
+        return JourneyEstimate(distance: distance * (1 - progress), duration: duration * (1 - progress),
+                               progress: progress, sampleArrival: JourneyFormat.sampleArrival(after: duration))
+    }
+
     var bounds: MKMapRect {
         paths.reduce(MKMapRect.null) { $0.union($1.boundingMapRect) }
     }
@@ -218,10 +225,25 @@ enum JourneyService {
     }
 }
 
+struct JourneyEstimate {
+    let distance: Double
+    let duration: TimeInterval
+    let progress: Double
+    let sampleArrival: String
+}
+
 enum JourneyFormat {
     static func time(_ seconds: TimeInterval) -> String {
-        let minutes = max(1, Int((seconds / 60).rounded()))
+        let minutes = max(0, Int((seconds / 60).rounded()))
         return minutes >= 60 ? "\(minutes / 60) h \(minutes % 60) min" : "\(minutes) min"
+    }
+
+    // The concept starts at the 9:41 AM departure shown on the design board.
+    static func sampleArrival(after duration: TimeInterval) -> String {
+        let clockMinutes = (9 * 60 + 41 + Int((duration / 60).rounded())) % (24 * 60)
+        let hour = clockMinutes / 60
+        let minute = String(format: "%02d", clockMinutes % 60)
+        return "\(hour % 12 == 0 ? 12 : hour % 12):\(minute) " + (hour < 12 ? "AM" : "PM")
     }
 
     static func distance(_ meters: Double) -> String {
