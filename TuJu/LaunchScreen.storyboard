@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23000" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="Z9w-yS-0ws">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23000"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <scene sceneID="hzy-fL-Xuo">
+            <objects>
+                <viewController id="Z9w-yS-0ws" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Bhs-P8-jTc">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="TuJuMark" translatesAutoresizingMaskIntoConstraints="NO" id="U6B-0x-b97">
+                                <rect key="frame" x="112" y="325" width="169" height="202"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="169" id="csq-LT-5Yh"/>
+                                    <constraint firstAttribute="height" constant="202" id="kJ7-2H-Hxq"/>
+                                </constraints>
+                            </imageView>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="7NW-s2-34Z"/>
+                        <color key="backgroundColor" red="0.0" green="0.5333333333" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="U6B-0x-b97" firstAttribute="centerX" secondItem="Bhs-P8-jTc" secondAttribute="centerX" id="wnH-bO-x9v"/>
+                            <constraint firstItem="U6B-0x-b97" firstAttribute="centerY" secondItem="Bhs-P8-jTc" secondAttribute="centerY" id="aBz-I4-D3S"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="syA-yZ-iFe" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="TuJuMark" width="169" height="202"/>
+    </resources>
+</document>
