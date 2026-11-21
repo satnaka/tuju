@@ -29,7 +29,7 @@ Select the **TuJu** scheme and an iPhone destination, then press **Run**. For a 
 
 ## Account sign-in
 
-TuJu uses the system browser and OpenID Connect for account sign-in. To enable it, register a native app in your organization's identity provider and configure the issuer, public client ID and callback. Enable Apple, Google or MyDigital ID on that provider's hosted sign-in page using your organization's registrations. The default build opens in guest mode. [Account configuration](Configuration/Authentication.md)
+TuJu opens Auth0 Universal Login in the system browser. This checkout connects to TuJu’s development tenant. From the welcome tour, tap **I already have an account → Sign in to TuJu**. From Home, use **Profile → Sign in to TuJu**. Guest access is available from the welcome screen. Production Apple, Google and MyDigital ID registrations are managed by TuJu’s publisher. [Account configuration](Configuration/Authentication.md)
 
 ## Design and implementation
 

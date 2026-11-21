@@ -1,5 +1,5 @@
 {
-  "name": "TuJu iOS",
+  "name": "TuJu",
   "app_type": "native",
   "is_first_party": true,
   "oidc_conformant": true,

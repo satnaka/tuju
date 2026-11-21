@@ -327,6 +327,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Configuration/TuJu-Info.plist";
 				TUJU_OIDC_CALLBACK_SCHEME = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				TUJU_OIDC_CLIENT_ID = L4F2sLHcJBAaefgEY4cMbgNnJp4ZX5YN;
+				TUJU_OIDC_ISSUER = "https://dev-t8iqgoqdz3dyl208.us.auth0.com/";
 				INFOPLIST_KEY_CFBundleDisplayName = TuJu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TuJu uses your location to show where you are and find routes from your current position.";
@@ -365,6 +367,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Configuration/TuJu-Info.plist";
 				TUJU_OIDC_CALLBACK_SCHEME = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				TUJU_OIDC_CLIENT_ID = L4F2sLHcJBAaefgEY4cMbgNnJp4ZX5YN;
+				TUJU_OIDC_ISSUER = "https://dev-t8iqgoqdz3dyl208.us.auth0.com/";
 				INFOPLIST_KEY_CFBundleDisplayName = TuJu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TuJu uses your location to show where you are and find routes from your current position.";

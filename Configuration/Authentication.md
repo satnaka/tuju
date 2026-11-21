@@ -1,13 +1,22 @@
 # Account sign-in
 
-TuJu uses a public native OpenID Connect client. People can use the app as guests until an identity-provider administrator registers the app and supplies its public settings.
+The Xcode project connects to TuJu’s Auth0 development tenant by default. The iPhone opens the tenant’s hosted page and uses a public native OpenID Connect client. Guest access is available on the account entry screen.
+
+| Development setting | Value |
+| --- | --- |
+| Issuer | `https://dev-t8iqgoqdz3dyl208.us.auth0.com/` |
+| Public native client ID | `L4F2sLHcJBAaefgEY4cMbgNnJp4ZX5YN` |
+| Auth0 return to the iPhone | `com.satnaka.tuju:/oauth/callback` |
+| Upstream provider return to Auth0 | `https://dev-t8iqgoqdz3dyl208.us.auth0.com/login/callback` |
+
+The development login page offers email/password and Google. The Google connection currently uses Auth0’s development keys. Complete the publisher registrations and verify each provider with a real account before releasing it to travelers.
 
 ## Set up TuJu with Auth0 Universal Login
 
-1. Select the Auth0 tenant owned by TuJu’s publisher. Under **Applications → Applications**, look for **TuJu iOS**. For a new registration, create a **Native** application with the settings in the [TuJu client manifest](auth0-native-client.json). The manifest also serves as the request body for the [Auth0 Create a client API](https://auth0.com/docs/api/management/v2/clients/post-clients).
+1. Select the Auth0 tenant owned by TuJu’s publisher. Under **Applications → Applications**, look for **TuJu**. For a new registration, create a **Native** application with the settings in the [TuJu client manifest](auth0-native-client.json). The manifest also serves as the request body for the [Auth0 Create a client API](https://auth0.com/docs/api/management/v2/clients/post-clients).
 2. Allow `com.satnaka.tuju:/oauth/callback` as the return URL from Auth0 to the iPhone. Copy the app’s public **Client ID** and the exact `issuer` from `https://<your-auth0-domain>/.well-known/openid-configuration` into the Xcode settings below. Preserve the issuer’s trailing slash.
-3. For **Google**, create a Web application OAuth client in TuJu’s Google Cloud project. Register `https://<your-auth0-domain>/login/callback` as its redirect URI. In Auth0, enter that client’s credentials under **Authentication → Social → Google** and enable the connection for **TuJu iOS**. Use the publisher’s credentials for production. [Google connection setup](https://developer.auth0.com/resources/labs/authentication/google-social-connection-to-login)
-4. For **Apple** on the hosted login page, Apple requires an existing App Store app using Sign in with Apple. Associate a Services ID with its primary App ID, register the Auth0 HTTPS domain and return URL, then enable the Apple social connection for **TuJu iOS**. If this is the publisher’s first iOS release and it lacks an eligible app, the alternative is a native Sign in with Apple button and Auth0’s native exchange. That path requires an iOS implementation and an Apple-enabled App ID. [Apple web requirements](https://developer.apple.com/documentation/signinwithapple/configuring-your-environment-for-sign-in-with-apple) · [Auth0 native Apple sign-in](https://auth0.com/docs/authenticate/identity-providers/social-identity-providers/apple-native)
+3. For **Google**, create a Web application OAuth client in TuJu’s Google Cloud project. Register `https://<your-auth0-domain>/login/callback` as its redirect URI. In Auth0, enter that client’s credentials under **Authentication → Social → Google** and enable the connection for **TuJu**. Use the publisher’s credentials for production. [Google connection setup](https://developer.auth0.com/resources/labs/authentication/google-social-connection-to-login)
+4. For **Apple** on the hosted login page, Apple requires an existing App Store app using Sign in with Apple. Associate a Services ID with its primary App ID, register the Auth0 HTTPS domain and return URL, then enable the Apple social connection for **TuJu**. If this is the publisher’s first iOS release and it lacks an eligible app, the alternative is a native Sign in with Apple button and Auth0’s native exchange. That path requires an iOS implementation and an Apple-enabled App ID. [Apple web requirements](https://developer.apple.com/documentation/signinwithapple/configuring-your-environment-for-sign-in-with-apple) · [Auth0 native Apple sign-in](https://auth0.com/docs/authenticate/identity-providers/social-identity-providers/apple-native)
 5. For **MyDigital ID**, register TuJu as a relying party through the operator’s developer portal. Confirm that the operator accepts the Auth0 HTTPS callback and supplies an OIDC authorization-code flow with a supported token authentication method and stable subject claim. Using its sandbox details, create **Authentication → Enterprise → OpenID Connect** in Auth0. Set the display name to **MyDigital ID**, enable its login button and assign it to the TuJu test application. Test opening the MyDigital ID app on an iPhone and returning to TuJu before enabling the operator’s production registration. [MyDigital ID portal](https://developer.digital-id.my/auth/login) · [Auth0 OIDC connections](https://auth0.com/docs/authenticate/identity-providers/enterprise-identity-providers/oidc)
 
 In Auth0, enable only the connections intended for this application. Enter upstream secrets in the provider dashboards. The native client manifest contains public registration settings.
@@ -31,7 +40,7 @@ The hosted provider must expose an OpenID Connect UserInfo endpoint for its TuJu
 
 ## Configure Xcode
 
-Open `TuJu.xcworkspace`. Under **TuJu target → Build Settings**, add the following user-defined settings for your chosen build configurations.
+Open `TuJu.xcworkspace`. Under **TuJu target → Build Settings**, update the following user-defined settings when targeting another tenant. Configure the production registration in the Release configuration before distribution.
 
 | Setting | Value |
 | --- | --- |
