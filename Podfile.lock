@@ -1,4 +1,10 @@
 PODS:
+  - AppAuth (3.0.0):
+    - AppAuth/Core (= 3.0.0)
+    - AppAuth/ExternalUserAgent (= 3.0.0)
+  - AppAuth/Core (3.0.0)
+  - AppAuth/ExternalUserAgent (3.0.0):
+    - AppAuth/Core
   - boost (1.84.0):
     - ReactNativeDependencies
   - DoubleConversion (1.1.6):
@@ -2067,6 +2073,7 @@ PODS:
     - React-Core-prebuilt
 
 DEPENDENCIES:
+  - AppAuth (~> 3.0.0)
   - boost (from `build/rndeps-facades/boost`)
   - DoubleConversion (from `build/rndeps-facades/DoubleConversion`)
   - fast_float (from `build/rndeps-facades/fast_float`)
@@ -2159,6 +2166,10 @@ DEPENDENCIES:
   - RNWorklets (from `NativeUI/node_modules/react-native-worklets`)
   - SocketRocket (from `build/rndeps-facades/SocketRocket`)
   - Yoga (from `build/rncore-facades/Yoga`)
+
+SPEC REPOS:
+  trunk:
+    - AppAuth
 
 EXTERNAL SOURCES:
   boost:
@@ -2346,6 +2357,7 @@ EXTERNAL SOURCES:
     :path: build/rncore-facades/Yoga
 
 SPEC CHECKSUMS:
+  AppAuth: b19b479e4e20f31869ce3fc2302312dc3fce98b8
   boost: 8502bfdc46e2804408af2e163049ece181009af4
   DoubleConversion: 501a575c40c0b50c89685762dd3e415e6bb26fb0
   fast_float: 7c925d1cebf8328d4018d061f49377e9f887e3b4
@@ -2438,6 +2450,6 @@ SPEC CHECKSUMS:
   SocketRocket: 37aec555668fb852ec12e3c0de59a86ca58f0871
   Yoga: d1c536142c5ff8ec8cd856ab2a7c227a1d875c8e
 
-PODFILE CHECKSUM: 1128069719509c35b06203e5fa55701af032d0a0
+PODFILE CHECKSUM: 062224107d615dc1c665e2660e78c659eb267bf6
 
 COCOAPODS: 1.17.0

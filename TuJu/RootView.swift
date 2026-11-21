@@ -76,6 +76,7 @@ private struct JourneyLaunch: Identifiable {
     var query = ""
     var destination: JourneyPlace?
     var showStops = false
+    var previewConcept = false
 }
 
 struct RootView: View {
@@ -88,9 +89,15 @@ struct RootView: View {
     @State private var panelHeight: CGFloat = 289
     @State private var useSwiftUIPanel = false
     @State private var camera: MapCameraPosition = .region(Self.kualaLumpur)
+    @State private var visibleRegion = Self.kualaLumpur
+    @State private var configuredCamera = false
+    @State private var locateRequest: UUID?
+    @State private var locateIssue: ExploreLocationIssue?
     @StateObject private var location = ExploreLocation()
     @ObservedObject private var history = JourneyHistory.shared
-    @AppStorage("tuju.displayName") private var name = "Amir"
+    @EnvironmentObject private var session: TuJuSession
+    @AppStorage("tuju.displayName") private var localName = ""
+    private var name: String { session.displayName ?? (localName.isEmpty ? "Guest" : localName) }
     @AppStorage("tuju.mapStyle") private var mapStyle = "Daylight"
     @AppStorage("tuju.mapTheme") private var theme = "TuJu Blue"
     @AppStorage(TuJuRewardsLedger.storageKey) private var ledger = Data()
@@ -106,7 +113,7 @@ struct RootView: View {
         GeometryReader { viewport in
             mapAndControls(panelLimit: max(110, viewport.size.height - 245))
         }
-        .preferredColorScheme(.light)
+        .tujuLightChrome()
         .buttonStyle(.plain)
         .sheet(item: $sheet, onDismiss: {
             if let pendingLaunch { launch = pendingLaunch; self.pendingLaunch = nil }
@@ -129,44 +136,66 @@ struct RootView: View {
         .fullScreenCover(item: $launch, onDismiss: {
             if let pendingTab { self.pendingTab = nil; selectTab(pendingTab) }
         }) { request in
-            JourneyView(initialQuery: request.query, origin: location.current?.coordinate,
-                        initialDestination: request.destination, showStopsInitially: request.showStops, onTab: { newTab in
+            JourneyView(initialQuery: request.query, location: location, searchRegion: visibleRegion,
+                        initialDestination: request.destination, showStopsInitially: request.showStops,
+                        previewConcept: request.previewConcept, onTab: { newTab in
                             pendingTab = newTab
                             launch = nil
                         }, onClose: { launch = nil })
         }
-        .onChange(of: location.current) { _, value in
-            guard let value else { return }
-            camera = .region(.init(center: value.coordinate, latitudinalMeters: 2200, longitudinalMeters: 2200))
+        .onAppear {
+            guard !configuredCamera else { return }
+            configuredCamera = true
+            if location.isAuthorized {
+                camera = .userLocation(followsHeading: false, fallback: .region(visibleRegion))
+            }
         }
-        .alert("Location unavailable", isPresented: $location.failed) {
-            Button("OK") {}
-        } message: { Text("You can continue exploring Kuala Lumpur or allow location access in Settings.") }
+        .task(id: locateRequest) {
+            guard let request = locateRequest else { return }
+            do {
+                let fix = try await location.currentFix()
+                guard !Task.isCancelled, locateRequest == request else { return }
+                let nearby = MKCoordinateRegion(center: fix.coordinate, latitudinalMeters: 2200, longitudinalMeters: 2200)
+                camera = .userLocation(followsHeading: false, fallback: .region(nearby))
+            } catch let issue as ExploreLocationIssue {
+                guard !Task.isCancelled, locateRequest == request else { return }
+                locateIssue = issue
+            } catch {}
+            if locateRequest == request { locateRequest = nil }
+        }
+        .alert(item: $locateIssue) { issue in
+            Alert(title: Text("Location unavailable"), message: Text(issue.localizedDescription), dismissButton: .default(Text("OK")))
+        }
+    }
+
+    private var liveMap: some View {
+        Map(position: $camera) {
+            if location.isAuthorized { UserAnnotation { TuJuVehicleMarker() } }
+            ForEach(JourneyPlace.suggestions) { place in
+                Annotation(place.name, coordinate: place.coordinate) {
+                    Button { launch = JourneyLaunch(destination: place) } label: {
+                        Image(systemName: "mappin.circle.fill").font(.title).foregroundStyle(.white, .blue)
+                    }.accessibilityLabel(place.name)
+                }
+            }
+        }
+        .mapStyle(mapStyle == "Terrain" ? .hybrid(elevation: .realistic) : .standard(elevation: mapStyle == "Default 3D" ? .realistic : .flat))
+        .onMapCameraChange(frequency: .onEnd) { context in
+            visibleRegion = context.region
+            if camera.positionedByUser { locateRequest = nil }
+        }
+        .tujuMapColors(theme: theme)
+        .ignoresSafeArea()
     }
 
     private func mapAndControls(panelLimit: CGFloat) -> some View {
         ZStack {
             if tab == .trips {
-                TripHistoryView(trips: history.trips) { place in launch = JourneyLaunch(destination: place) }
-            } else {
-                if tab == .map {
-                    Map(position: $camera) {
-                        UserAnnotation()
-                        ForEach(JourneyPlace.suggestions) { place in
-                            Annotation(place.name, coordinate: place.coordinate) {
-                                Button { launch = JourneyLaunch(destination: place) } label: {
-                                    Image(systemName: "mappin.circle.fill")
-                                        .font(.title).foregroundStyle(.white, .blue)
-                                }.accessibilityLabel(place.name)
-                            }
-                        }
-                    }
-                    .mapStyle(mapStyle == "Terrain" ? .hybrid(elevation: .realistic) : .standard(elevation: mapStyle == "Default 3D" ? .realistic : .flat))
-                    .environment(\.colorScheme, theme == "Night Blue" ? .dark : .light)
-                    .ignoresSafeArea()
-                } else {
-                    CityIllustration().ignoresSafeArea()
+                TripHistoryView(trips: history.trips) { place, isDemo in
+                    launch = JourneyLaunch(destination: place, previewConcept: isDemo)
                 }
+            } else {
+                liveMap
                 VStack(spacing: 0) {
                     categories.padding(.horizontal, 18).padding(.top, 10)
                     Spacer(minLength: 4)
@@ -174,10 +203,10 @@ struct RootView: View {
                         Spacer()
                         VStack(spacing: 10) {
                             floatingButton("HomeLayers", "Map appearance") { sheet = .layers }
-                            floatingButton("HomeLocate", "Show my location") {
-                                tab = .map
-                                location.request()
+                            floatingButton("HomeLocate", "Show my location", loading: locateRequest != nil) {
+                                locateRequest = UUID()
                             }
+                            .accessibilityValue(locateRequest != nil ? "Locating" : camera.followsUserLocation ? "Following your location" : "Exploring map")
                         }
                         .heroGlassGroup()
                     }.padding(.horizontal, 18).padding(.bottom, 20)
@@ -257,16 +286,20 @@ struct RootView: View {
         }
     }
 
-    private func floatingButton(_ asset: String, _ title: String, action: @escaping () -> Void) -> some View {
+    private func floatingButton(_ asset: String, _ title: String, loading: Bool = false,
+                                action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(asset).resizable().scaledToFit().frame(width: 22, height: 22)
-                .frame(width: 46, height: 46)
-                .heroGlass(.control, radius: 23)
-        }.accessibilityLabel(title).help(title)
+            Group {
+                if loading { ProgressView().controlSize(.small) }
+                else { Image(asset).resizable().scaledToFit().frame(width: 22, height: 22) }
+            }
+            .frame(width: 46, height: 46)
+            .heroGlass(.control, radius: 23)
+        }.accessibilityLabel(title).help(title).disabled(loading)
     }
 
     private var recentDetail: String {
-        history.recent.isEmpty ? "Recent destination · Kuala Lumpur" : recent.subtitle
+        history.recent.isEmpty ? "Suggested destination · Kuala Lumpur" : recent.subtitle
     }
 
     private func journeyControls(maxHeight: CGFloat) -> some View {
@@ -333,7 +366,7 @@ struct RootView: View {
                     placeRow(asset: "HomeRecent", name: recent.name, detail: recentDetail)
                 }
                 Button { launch = JourneyLaunch(destination: .oneUtama, showStops: true) } label: {
-                    placeRow(asset: "HomeStop", name: "Plan your next R&R stop", detail: "Compare crowd & parking information")
+                    placeRow(asset: "HomeStop", name: "Preview R&R stops", detail: "One Utama concept route · Offline preview")
                         .padding(.horizontal, 10).padding(.vertical, 7)
                         .background(.quaternary, in: RoundedRectangle(cornerRadius: 16))
                 }
@@ -398,61 +431,4 @@ struct RootView: View {
 extension Color {
     static let tujuInk = Color(red: 0.04, green: 0.11, blue: 0.20)
     static let tujuNavy = Color(red: 0.06, green: 0.19, blue: 0.38)
-}
-
-private struct CityIllustration: View {
-    var body: some View {
-        GeometryReader { geometry in
-            let w = geometry.size.width / 402
-            let h = geometry.size.height / 874
-            ZStack(alignment: .topLeading) {
-                Image("KualaLumpurMap").resizable().frame(width: geometry.size.width, height: geometry.size.height)
-                label("KUALA LUMPUR", 15, x: 117 * w, y: 196 * h)
-                label("Bukit Bintang", 12, x: 214 * w, y: 319 * h)
-                label("KLCC", 12, x: 309 * w, y: 221 * h)
-                label("Jalan Sultan Ismail", 10, x: 194 * w, y: 267 * h)
-                label("Jalan Raja Chulan", 10, x: 36 * w, y: 365 * h)
-                label("KL Forest Eco Park", 9, x: 106 * w, y: 281 * h)
-                label("Preview location", 11, x: 161 * w, y: 424 * h)
-            }
-        }.accessibilityHidden(true)
-    }
-    private func label(_ text: String, _ size: CGFloat, x: CGFloat, y: CGFloat) -> some View {
-        Text(text).font(.system(size: size, weight: .semibold)).foregroundStyle(Color(red: 0.35, green: 0.43, blue: 0.49)).offset(x: x, y: y)
-    }
-}
-
-private final class ExploreLocation: NSObject, ObservableObject, CLLocationManagerDelegate {
-    @Published var current: CLLocation?
-    @Published var failed = false
-    private let manager = CLLocationManager()
-    private var requested = false
-
-    override init() {
-        super.init()
-        manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-    }
-    func request() {
-        requested = true
-        checkPermission()
-    }
-    private func checkPermission() {
-        guard requested else { return }
-        switch manager.authorizationStatus {
-        case .authorizedAlways, .authorizedWhenInUse: manager.requestLocation()
-        case .notDetermined: manager.requestWhenInUseAuthorization()
-        default: requested = false; failed = true
-        }
-    }
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) { checkPermission() }
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        requested = false
-        current = locations.last
-    }
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        guard requested else { return }
-        requested = false
-        failed = true
-    }
 }

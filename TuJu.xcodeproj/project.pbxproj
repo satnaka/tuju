@@ -325,6 +325,8 @@
 				"ENABLE_HARDENED_RUNTIME[sdk=macosx*]" = NO;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Configuration/TuJu-Info.plist";
+				TUJU_OIDC_CALLBACK_SCHEME = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_KEY_CFBundleDisplayName = TuJu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TuJu uses your location to show where you are and find routes from your current position.";
@@ -361,6 +363,8 @@
 				DEAD_CODE_STRIPPING = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Configuration/TuJu-Info.plist";
+				TUJU_OIDC_CALLBACK_SCHEME = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				INFOPLIST_KEY_CFBundleDisplayName = TuJu;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.navigation";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TuJu uses your location to show where you are and find routes from your current position.";

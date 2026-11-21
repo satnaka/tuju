@@ -1,12 +1,23 @@
 # TuJu
 
-TuJu is an interactive iPhone navigation concept set in Kuala Lumpur. Its Home panel and bottom menu use React Native and HeroUI Native Pro. SwiftUI presents the journey screens and MapKit provides live maps and directions. The featured journey to One Utama works offline.
+TuJu is an iPhone navigation app for finding a place, comparing driving routes and starting turn-by-turn guidance in Apple Maps. It also includes an offline Kuala Lumpur journey that previews the lane guidance, R&R stops and rewards from the TuJu design.
 
-## Try the concept
+**Need directions now?** Apple Maps opens directly from these links. [Open Apple Maps](https://maps.apple.com/) · [Directions to KL Sentral](https://maps.apple.com/directions?destination=KL%20Sentral%2C%20Kuala%20Lumpur%2C%20Malaysia&mode=driving)
 
-On a development Mac, install Node.js 24, pnpm 11 and CocoaPods. The JavaScript dependencies include a licensed HeroUI Native Pro package. A first-time developer can authenticate through the [official HeroUI Native Pro installer](https://heroui.pro/docs/native/getting-started/installation).
+## Take a trip in TuJu
 
-From the project root, install the pinned dependencies and open the workspace.
+1. Open **Home** or **Map**. Tap **Show my location** to center the map, or pan to the area you want to explore.
+2. Tap **Search places or addresses**, enter a destination and select a result. **Drive with TuJu** shows available routes from your current location. MapKit search and directions require a network connection.
+3. Compare time and distance, check alternatives or add a stop. Tap **Start navigation in Apple Maps** for turn-by-turn guidance. You can also open the destination in Apple Maps when TuJu cannot get a location fix.
+4. For a ride, choose **Compare ride options**. Review the destination and open the provider to check availability, enter pickup details and book.
+
+For the illustrated journey, open search and choose **Explore the One Utama concept route**. **Preview R&R stops** on Home opens its sample rest stops. The parking counts, traffic scenarios, ride fares and vouchers in this preview are simulated. Profile preferences, saved destinations, journey history and demo rewards are stored on the device.
+
+## Run the iPhone app
+
+This repository distributes the source. To run TuJu, use Xcode on a Mac with an iPhone simulator or a device running iOS 17 or later. Install Node.js 24, pnpm 11 and CocoaPods. The Home panel and tab bar use a licensed HeroUI Native Pro package. Authenticate with your HeroUI license before installing dependencies. [HeroUI Native Pro installation](https://heroui.pro/docs/native/getting-started/installation)
+
+From the project root, run
 
 ```sh
 pnpm --dir NativeUI install --frozen-lockfile
@@ -14,19 +25,12 @@ pod install
 open TuJu.xcworkspace
 ```
 
-Select the **TuJu** scheme and an iPhone simulator with iOS 17 or later, then press **Run**. To try the same controls on your Mac, select **My Mac (Mac Catalyst)**. Xcode bundles the JavaScript and icons into the app, so the concept runs without a Metro development server.
+Select the **TuJu** scheme and an iPhone destination, then press **Run**. For a Mac preview, select **My Mac (Mac Catalyst)**. Xcode bundles the React Native controls into the app. To test live directions in Simulator, set a simulated location and allow location access when TuJu asks.
 
-1. From **Home**, tap **Search places or addresses** and choose **One Utama**.
-2. Compare the three routes. Try **Avoid tolls**, inspect the toll details or add an R&R stop.
-3. Start the preview to explore lane guidance, Simple Mode and the road-level choices. Open **Ride options** on the route screen to try a simulated pickup.
-4. Open **Rewards** from Home to browse vouchers. Demo redemptions, saved destinations and trip history stay on the device.
+## Account sign-in
 
-The illustrative map, lane instructions, sample traffic, fares and vouchers are concept data. Live map features use Apple MapKit and require network access. The location button requests permission only when tapped. Driving and ride previews can be explored without granting access.
+TuJu uses the system browser and OpenID Connect for account sign-in. To enable it, register a native app in your organization's identity provider and configure the issuer, public client ID and callback. Enable Apple, Google or MyDigital ID on that provider's hosted sign-in page using your organization's registrations. The default build opens in guest mode. [Account configuration](Configuration/Authentication.md)
 
-## Design
+## Design and implementation
 
-The visual reference is the **Main UI Screen (Finalized)** page. The Home panel uses Button from `heroui-native`. The four-item bottom menu uses Segment from `heroui-native-pro` with bundled SVG icons. Both controls render through React Native Fabric. SwiftUI supplies the selected tab, saved destinations and recent places, and handles the actions from the controls.
-
-The React Native components live in [NativeUI/TuJuControls.jsx](NativeUI/TuJuControls.jsx). The Swift and Objective-C++ host lives in [TuJu/ReactNative](TuJu/ReactNative). Source artwork remains in the app’s asset catalog.
-
-[Open the source design in Figma](https://www.figma.com/design/5njuLGsk4xiY1H613dOfja/GDC601---Communication-Studio-2?node-id=72-9085)
+The first-launch tour, Drive and Ride choices, rewards and navigation preferences draw on the Prototype 1 canvas. The map controls use HeroUI Native components hosted in SwiftUI with React Native Fabric. Apple Liquid Glass is used on supported OS versions. [Prototype 1](https://www.figma.com/design/5njuLGsk4xiY1H613dOfja/GDC601---Communication-Studio-2?node-id=1-2) · [Main UI Screen](https://www.figma.com/design/5njuLGsk4xiY1H613dOfja/GDC601---Communication-Studio-2?node-id=72-9085) · [React Native controls](NativeUI/TuJuControls.jsx) · [Swift host](TuJu/ReactNative)

@@ -15,11 +15,11 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="TuJuMark" translatesAutoresizingMaskIntoConstraints="NO" id="U6B-0x-b97">
-                                <rect key="frame" x="112" y="325" width="169" height="202"/>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="WelcomeMark" translatesAutoresizingMaskIntoConstraints="NO" id="U6B-0x-b97">
+                                <rect key="frame" x="112" y="325" width="155.5" height="192.5"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="169" id="csq-LT-5Yh"/>
-                                    <constraint firstAttribute="height" constant="202" id="kJ7-2H-Hxq"/>
+                                    <constraint firstAttribute="width" constant="155.5" id="csq-LT-5Yh"/>
+                                    <constraint firstAttribute="height" constant="192.5" id="kJ7-2H-Hxq"/>
                                 </constraints>
                             </imageView>
                         </subviews>
@@ -36,6 +36,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="TuJuMark" width="169" height="202"/>
+        <image name="WelcomeMark" width="155.5" height="192.5"/>
     </resources>
 </document>

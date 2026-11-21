@@ -20,9 +20,11 @@ extension View {
 
 struct JourneyView: View {
     let initialQuery: String
-    let origin: CLLocationCoordinate2D?
+    @ObservedObject var location: ExploreLocation
+    let searchRegion: MKCoordinateRegion
     var initialDestination: JourneyPlace? = nil
     var showStopsInitially = false
+    var previewConcept = false
     var onTab: ((TuJuTab) -> Void)? = nil
     let onClose: () -> Void
 
@@ -32,6 +34,7 @@ struct JourneyView: View {
     @State private var results: [JourneyPlace] = []
     @State private var searching = false
     @State private var searchIssue: String?
+    @State private var searchAttempt = 0
     @State private var savedOnly = false
     @State private var demo = false
     @State private var avoidTolls = false
@@ -39,14 +42,16 @@ struct JourneyView: View {
     @State private var plans: [JourneyPlan] = []
     @State private var planIndex = 0
     @State private var calculating = false
+    @State private var locating = false
+    @State private var openingMaps = false
     @State private var routeIssue: String?
     @State private var attempts = 0
     @State private var sheet: JourneySheet?
     @State private var driving = false
+    @State private var choosingMode = false
     @State private var roadEstimate: JourneyEstimate?
     @State private var startedID: UUID?
     @State private var openStopsAfterRouting = false
-    @State private var stopDetailName: String?
     @State private var initialized = false
     @State private var mapsIssue = false
     @FocusState private var typing: Bool
@@ -55,39 +60,26 @@ struct JourneyView: View {
 
     private var queryText: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
     private var plan: JourneyPlan? { plans.indices.contains(planIndex) ? plans[planIndex] : nil }
-    private var source: JourneyPlace {
-        guard let origin else { return .klSentral }
-        return JourneyPlace(name: "Your location", subtitle: "", latitude: origin.latitude, longitude: origin.longitude)
-    }
     private var region: MKCoordinateRegion {
-        .init(center: source.coordinate, latitudinalMeters: 30000, longitudinalMeters: 30000)
+        guard let fix = location.current else { return searchRegion }
+        return .init(center: fix.coordinate, latitudinalMeters: 30000, longitudinalMeters: 30000)
     }
     private var routeKey: String { "\(destination?.id ?? "")|\(demo)|\(stop?.id ?? "")|\(avoidTolls)|\(attempts)" }
-    private var localCategory: [JourneyPlace]? {
-        func amenity(_ name: String, _ note: String) -> JourneyPlace {
-            JourneyPlace(name: name, subtitle: note, latitude: 3.14, longitude: 101.62)
-        }
-        switch queryText.lowercased() {
-        case "fuel", "petrol", "petrol station", "petrol stations", "gas station", "ev charging", "ev charger", "ev charging stations":
-            return [amenity("PETRONAS", "R&R Sungai Buloh · Concept fuel stop"), amenity("JomCharge", "R&R Sungai Buloh · Concept EV charging")]
-        case "food", "restaurants", "coffee", "café", "cafe", "cafes":
-            return [amenity("Café Mesra", "R&R Sungai Buloh · Concept food stop"), .oneUtama]
-        case "r&r", "rest stops", "rest areas", "rest stop", "rest area":
-            return [amenity("R&R Sungai Buloh", "Concept rest stop · 12 km"), amenity("R&R USJ", "Concept rest stop · 21 km")]
-        default: return nil
-        }
-    }
-    private var searchKey: String { destination == nil && !savedOnly && localCategory == nil ? queryText : "" }
+    private var searchQuery: String { destination == nil && !savedOnly ? queryText : "" }
+    private var searchKey: String { "\(searchAttempt)|\(searchQuery)" }
 
     var body: some View {
         Group {
-            if driving, let plan, let destination {
+            if choosingMode, let destination {
+                TuJuJourneyChoiceView(destination: destination, pickup: location.current, plan: plan, calculating: calculating,
+                                      onDrive: { choosingMode = false }, onBack: returnToSearch, onTab: onTab)
+            } else if driving, let plan, let destination {
                 JourneyDriveView(plan: plan, destination: destination, demo: demo, onRoad: { estimate in roadEstimate = estimate; sheet = .road },
-                                 onDetails: { sheet = .details }, onStops: { stopDetailName = nil; sheet = .stops }, onMaps: openMaps,
+                                 onDetails: { sheet = .details }, onStops: { sheet = .stops }, onMaps: openMaps,
                                  onExit: { driving = false }, onFinish: {
                     if demo, let startedID { TuJuRewardsLedger.creditCompletedJourney(id: startedID, destination: destination.name) }
                     driving = false
-                    onClose()
+                    if demo { onClose() }
                 })
             } else {
                 GeometryReader { bounds in
@@ -100,9 +92,9 @@ struct JourneyView: View {
                                 ScrollView { routePanel }.scrollIndicators(.hidden)
                                     .frame(height: min(plan?.hasTolls == false && demo ? 365 : 475, max(200, bounds.size.height * 0.65)))
                             } else {
-                                searchPanel.frame(height: min(345, max(150, bounds.size.height * (typing ? 0.77 : 0.48))))
+                                searchPanel.frame(height: min(448, max(150, bounds.size.height * (typing ? 0.77 : 0.59))))
                             }
-                            if !typing, let onTab { TuJuTabBar(selected: .home, onSelect: onTab) }
+                            if !typing, let onTab { TuJuTabBar(selected: destination == nil ? .home : .map, onSelect: onTab) }
                         }
                         .padding(.horizontal, 10)
                         .padding(.bottom, 4)
@@ -113,18 +105,24 @@ struct JourneyView: View {
         .foregroundStyle(JourneyInk.navy)
         .buttonStyle(HeroUIGlassButtonStyle())
         .tint(JourneyInk.blue)
-        .preferredColorScheme(.light)
+        .tujuLightChrome()
         .onAppear {
             guard !initialized else { return }
             initialized = true
             query = initialQuery
             if initialQuery.caseInsensitiveCompare("Saved") == .orderedSame { query = ""; savedOnly = true }
-            if showStopsInitially {
-                openStopsAfterRouting = true
-                choose(.oneUtama)
+            if showStopsInitially || previewConcept {
+                openStopsAfterRouting = showStopsInitially
+                choose(.oneUtama, concept: true)
             } else if let initialDestination { choose(initialDestination) }
         }
-        .task(id: searchKey) { await search(searchKey) }
+        .onChange(of: query) { _, value in
+            if !value.isEmpty { savedOnly = false }
+        }
+        .onChange(of: location.authorization) { previous, _ in
+            if previous != .notDetermined, destination != nil, !demo { attempts += 1 }
+        }
+        .task(id: searchKey) { await search(searchQuery) }
         .task(id: routeKey) { await route() }
         .sheet(item: $sheet) { item in
             switch item {
@@ -137,9 +135,12 @@ struct JourneyView: View {
                 if let plan, let destination {
                     JourneyDetailsView(plan: plan, destination: destination, demo: demo, onClose: { sheet = nil })
                 }
+            case .traffic:
+                trafficOverview
+                    .presentationDetents([.medium, .large])
             case .stops:
                 if let plan {
-                    JourneyStopsView(plan: plan, demo: demo, selected: stop, initialName: stopDetailName) { proposed in
+                    JourneyStopsView(plan: plan, demo: demo, selected: stop) { proposed in
                         stop = proposed
                         driving = false
                         sheet = nil
@@ -153,7 +154,7 @@ struct JourneyView: View {
     }
 
     @ViewBuilder private var mapLayer: some View {
-        if demo || (destination == nil && origin == nil) {
+        if demo {
             GeometryReader { bounds in
                 ZStack {
                     Image("KualaLumpurMap").resizable().scaledToFill()
@@ -168,8 +169,8 @@ struct JourneyView: View {
                 .frame(width: bounds.size.width, height: bounds.size.height).clipped()
             }.accessibilityHidden(true)
         } else {
-            JourneyMap(region: region, plans: plans, selected: plan, source: source, destination: destination, stop: stop,
-                       style: mapStyle, night: mapTheme == "Night Blue")
+            JourneyMap(region: region, plans: plans, selected: plan, destination: destination, stop: stop,
+                       style: mapStyle, theme: mapTheme, showUser: location.isAuthorized)
         }
     }
 
@@ -177,7 +178,7 @@ struct JourneyView: View {
         HStack(spacing: 10) {
             backButton(action: onClose)
             HStack(spacing: 12) {
-                Image(systemName: "magnifyingglass")
+                Image("HomeSearch").resizable().scaledToFit().frame(width: 20, height: 20)
                 TextField("Search places or addresses", text: $query)
                     .textInputAutocapitalization(.words).submitLabel(.search).focused($typing)
                     .onSubmit { typing = false }
@@ -196,14 +197,7 @@ struct JourneyView: View {
 
     private var visiblePlaces: [JourneyPlace] {
         if savedOnly { return history.saved }
-        if let localCategory { return localCategory }
-        if queryText.isEmpty {
-            return history.recent.isEmpty ? JourneyPlace.suggestions : history.recent
-        }
-        let suggestions = JourneyPlace.suggestions.filter {
-            ($0.name + " " + $0.subtitle).localizedCaseInsensitiveContains(queryText)
-        }
-        return suggestions + results.filter { place in !suggestions.contains(where: { $0.name.caseInsensitiveCompare(place.name) == .orderedSame }) }
+        return queryText.isEmpty ? history.recent : results
     }
 
     private var searchPanel: some View {
@@ -211,23 +205,24 @@ struct JourneyView: View {
             Capsule().fill(.blue.opacity(0.7)).frame(width: 34, height: 4)
             Text("Find your next destination").font(.title3.bold())
             HStack {
-                category("R&R", "signpost.right", active: queryText == "R&R") { setQuery("R&R") }
-                category("Fuel", "fuelpump", active: queryText == "Petrol station") { setQuery("Petrol station") }
-                category("Saved", "heart", active: savedOnly) { query = ""; savedOnly = true; typing = false }
+                category("R&R", "HomeRest", active: queryText == "R&R") { setQuery("R&R") }
+                category("Fuel", "HomeFuel", active: ["fuel", "petrol station"].contains(queryText.lowercased())) { setQuery("Fuel") }
+                category("Saved", "HomeSaved", active: savedOnly) { query = ""; savedOnly = true; typing = false }
+                Menu {
+                    ForEach(["Petrol", "Parking", "EV Charge", "Hotel", "Hospital", "Food"], id: \.self) { title in
+                        Button(title) { setQuery(title) }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle").frame(minWidth: 44, minHeight: 44)
+                }.accessibilityLabel("More categories")
             }
-            let heading = savedOnly ? "Saved places" : (queryText.isEmpty ? (history.recent.isEmpty ? "Suggested places" : "Recent searches") : "Search results")
+            let heading = savedOnly ? "Saved places" : (queryText.isEmpty ? "Recent searches" : "Search results")
             Text(heading).font(.subheadline.weight(.semibold))
             ScrollView {
                 VStack(spacing: 0) {
                     if searching { ProgressView("Searching Apple Maps…").font(.footnote).padding(.vertical, 6) }
                     ForEach(visiblePlaces.prefix(12)) { place in
-                        Button {
-                            if place.subtitle.localizedCaseInsensitiveContains("Concept") {
-                                stopDetailName = place.name == "R&R USJ" ? place.name : "R&R Sungai Buloh"
-                                openStopsAfterRouting = true
-                                choose(.oneUtama)
-                            } else { choose(place) }
-                        } label: {
+                        Button { choose(place) } label: {
                             HStack(spacing: 12) {
                                 Image(systemName: savedOnly ? "heart" : "mappin.and.ellipse").foregroundStyle(JourneyInk.blue)
                                 VStack(alignment: .leading, spacing: 3) {
@@ -240,13 +235,29 @@ struct JourneyView: View {
                         }.buttonStyle(HeroUIGlassButtonStyle())
                     }
                     if !searching && visiblePlaces.isEmpty {
-                        Text(savedOnly ? "Save a destination using its heart button." : (searchIssue ?? "No places found. Try a different name."))
+                        Text(savedOnly ? "Save a destination using its heart button." : (searchIssue ?? (queryText.isEmpty ? "Search Apple Maps for a place or address." : "No places found. Try a different name.")))
                             .font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center).padding()
+                        if searchIssue != nil { Button("Retry search") { searchAttempt += 1 } }
                     }
-                    if !queryText.isEmpty || savedOnly {
-                        Button("Explore the One Utama concept route") { choose(.oneUtama) }
-                            .font(.footnote.weight(.semibold)).padding(.vertical, 8)
+                    if queryText.isEmpty && !savedOnly {
+                        Text("Plan a stop before you go").font(.subheadline.bold()).padding(.vertical, 6)
+                        Button {
+                            openStopsAfterRouting = true
+                            choose(.oneUtama, concept: true)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image("HomeStop").resizable().scaledToFit().frame(width: 22, height: 22)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Preview R&R stops").font(.subheadline.weight(.semibold))
+                                    Text("One Utama concept route · Offline preview").font(.caption)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right").font(.caption)
+                            }.padding(12).journeyCard(17)
+                        }
                     }
+                    Button("Explore the One Utama concept route") { choose(.oneUtama, concept: true) }
+                        .font(.footnote.weight(.semibold)).frame(minHeight: 44)
                 }
             }.scrollDismissesKeyboard(.interactively)
         }
@@ -255,8 +266,11 @@ struct JourneyView: View {
 
     private func category(_ title: String, _ icon: String, active: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Label(title, systemImage: icon).font(.caption.weight(.semibold)).frame(maxWidth: .infinity)
-                .frame(minHeight: 40).background(active ? JourneyInk.line : .white.opacity(0.86), in: Capsule())
+            HStack(spacing: 4) {
+                Image(icon).resizable().scaledToFit().frame(width: 16, height: 16)
+                Text(title)
+            }.font(.caption.weight(.semibold)).frame(maxWidth: .infinity)
+                .frame(minHeight: 44).background(active ? JourneyInk.line : .white.opacity(0.86), in: Capsule())
                 .overlay(Capsule().strokeBorder(JourneyInk.line))
         }.buttonStyle(HeroUIGlassButtonStyle())
     }
@@ -264,9 +278,9 @@ struct JourneyView: View {
     private func routeHeader(_ destination: JourneyPlace) -> some View {
         VStack(spacing: 7) {
             HStack {
-                backButton { self.destination = nil; stop = nil; plans = []; demo = false; startedID = nil }
+                backButton { if demo { returnToSearch() } else { choosingMode = true } }
                 VStack(spacing: 5) {
-                    Text(demo ? "Your location · Concept" : (origin == nil ? "From KL Sentral" : "Your location"))
+                    Text(demo ? "Sample departure · Concept" : "From your current location")
                         .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 38)
                         .heroGlass(.floating, radius: 22)
                     Text(demo ? "One Utama · East Entrance" : destination.name).font(.subheadline.bold()).lineLimit(2)
@@ -281,12 +295,10 @@ struct JourneyView: View {
             HStack(spacing: 10) {
                 Text("Drive").foregroundStyle(JourneyInk.blue).padding(.horizontal, 30).frame(minHeight: 32)
                     .background(JourneyInk.sky, in: Capsule()).overlay(Capsule().strokeBorder(Color.blue.opacity(0.35)))
-                if demo {
-                    Button { sheet = .ride } label: {
-                        Text("Ride options").padding(.horizontal, 17).frame(minHeight: 32)
+                Button { if demo { sheet = .ride } else { choosingMode = true } } label: {
+                        Text(demo ? "Ride options" : "Change travel option").padding(.horizontal, 17).frame(minHeight: 32)
                             .heroGlass(.control, radius: 18)
                             .frame(minHeight: 44).contentShape(Rectangle())
-                    }
                 }
             }.font(.caption.weight(.semibold))
         }.heroGlassGroup().padding(.horizontal, 6)
@@ -295,10 +307,19 @@ struct JourneyView: View {
     private var routePanel: some View {
         VStack(spacing: 8) {
             Capsule().fill(JourneyInk.blue.opacity(0.8)).frame(width: 34, height: 4)
-            Text("Choose your route").font(.title3.bold())
+            Text(demo ? "Choose your route" : "Route preview").font(.title3.bold())
+            if !demo {
+                Button(action: openMaps) {
+                    Text(navigationTitle).font(.subheadline.bold()).foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 46).background(JourneyInk.blue, in: Capsule())
+                }.disabled(openingMaps)
+                if #unavailable(iOS 18.4, macCatalyst 18.4), avoidTolls {
+                    Text("Select Avoid Tolls in Apple Maps for guidance.").font(.caption).foregroundStyle(.secondary)
+                }
+            }
             Button(avoidTolls ? "Show all routes" : "Avoid tolls") { avoidTolls.toggle() }.font(.caption.weight(.semibold))
             if calculating {
-                ProgressView("Finding routes…").padding()
+                ProgressView(locating ? "Getting your location…" : "Finding routes…").padding()
             } else if let plan {
                 HStack(spacing: 6) {
                     ForEach(Array(plans.enumerated()), id: \.element.id) { index, option in
@@ -317,7 +338,7 @@ struct JourneyView: View {
                     }
                 }
                 if demo && plan.hasTolls {
-                    Button { sheet = .details } label: {
+                    Button { sheet = .traffic } label: {
                         VStack(spacing: 4) {
                             Label("Traffic now · +8 min delay", systemImage: "trafficlight").font(.caption.weight(.semibold))
                             HStack(spacing: 2) {
@@ -356,7 +377,7 @@ struct JourneyView: View {
                         }
                     }.padding(11).journeyCard(17)
                 }.buttonStyle(HeroUIGlassButtonStyle())
-                Button { stopDetailName = nil; sheet = .stops } label: {
+                Button { sheet = .stops } label: {
                     HStack {
                         Image(systemName: "signpost.right")
                         VStack(alignment: .leading, spacing: 2) {
@@ -367,24 +388,25 @@ struct JourneyView: View {
                         Spacer(); Image(systemName: "chevron.right").font(.caption)
                     }.padding(10).journeyCard(16)
                 }.buttonStyle(HeroUIGlassButtonStyle())
-                HStack(spacing: 8) {
-                    Button(demo ? "Toll details" : "Steps") { sheet = .details }
-                        .frame(maxWidth: .infinity, minHeight: 44).journeyCard(24)
-                    Button(demo ? "Start · \(shortTime(plan.duration))" : "Preview route") {
-                        if demo, startedID == nil { startedID = history.start(plan, to: destination ?? .oneUtama, demo: true) }
-                        driving = true
-                    }.frame(maxWidth: .infinity, minHeight: 44).background(Color(red: 0.31, green: 0.70, blue: 0.99), in: Capsule())
-                }.font(.subheadline.bold())
-                if !demo {
-                    Button(stop == nil ? "Start navigation in Apple Maps" : "Navigate to stop in Apple Maps", action: openMaps)
-                        .font(.subheadline.weight(.semibold)).frame(minHeight: 38)
+                if demo {
+                    HStack(spacing: 8) {
+                        Button("Toll details") { sheet = .details }
+                            .frame(maxWidth: .infinity, minHeight: 44).journeyCard(24)
+                        Button("Start · \(shortTime(plan.duration))") {
+                            if startedID == nil { startedID = history.start(plan, to: .oneUtama, demo: true) }
+                            driving = true
+                        }.frame(maxWidth: .infinity, minHeight: 44).background(Color(red: 0.31, green: 0.70, blue: 0.99), in: Capsule())
+                    }.font(.subheadline.bold())
+                } else {
+                    Button("Preview route steps") { driving = true }
+                        .font(.subheadline.weight(.semibold)).frame(minHeight: 44)
                 }
             } else if let routeIssue {
                 Text(routeIssue).font(.subheadline).multilineTextAlignment(.center).padding(5)
                 HStack {
                     Button("Retry") { attempts += 1 }
                     if stop != nil { Button("Remove stop") { stop = nil } }
-                    Button("One Utama concept") { choose(.oneUtama) }
+                    Button("One Utama concept") { choose(.oneUtama, concept: true) }
                 }.font(.footnote.weight(.semibold))
             }
         }
@@ -396,6 +418,26 @@ struct JourneyView: View {
             .frame(maxWidth: .infinity, minHeight: 25).background(JourneyInk.sky, in: RoundedRectangle(cornerRadius: 8))
     }
 
+    private var trafficOverview: some View {
+        ScrollView {
+            VStack(spacing: 14) {
+                Text("Traffic on your route").font(.title2.bold())
+                Text("+8 min").font(.largeTitle.bold()).foregroundStyle(.orange)
+                Text("Additional time from traffic").font(.subheadline).foregroundStyle(.secondary)
+                VStack(spacing: 8) {
+                    Text("Highway section · Slow traffic").font(.headline)
+                    Text("A slower section adds about 5 min.").font(.subheadline)
+                    Text("Approaching destination · Congestion").font(.headline)
+                    Text("Local congestion adds about 3 min.").font(.subheadline)
+                }.frame(maxWidth: .infinity).padding().journeyCard()
+                Text("Simulated traffic on the One Utama concept route").font(.caption).foregroundStyle(.secondary)
+                Button("Back to route choices") { sheet = nil }
+                    .font(.headline).foregroundStyle(.white).frame(maxWidth: .infinity, minHeight: 48)
+                    .background(JourneyInk.blue, in: Capsule())
+            }.padding(20)
+        }.presentationDragIndicator(.visible)
+    }
+
     private func backButton(action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: "chevron.left").frame(width: 44, height: 44).heroGlass(.control, radius: 22)
@@ -404,9 +446,15 @@ struct JourneyView: View {
 
     private func setQuery(_ value: String) { query = value; savedOnly = false; typing = false }
 
-    private func choose(_ place: JourneyPlace) {
+    private func returnToSearch() {
+        destination = nil; stop = nil; plans = []; driving = false
+        demo = false; choosingMode = false; startedID = nil
+    }
+
+    private func choose(_ place: JourneyPlace, concept: Bool = false) {
         typing = false
-        demo = place.id == JourneyPlace.oneUtama.id
+        demo = concept
+        choosingMode = !concept
         destination = place; stop = nil; avoidTolls = false; planIndex = 0; plans = []; routeIssue = nil; startedID = nil
         history.visit(place)
     }
@@ -418,9 +466,10 @@ struct JourneyView: View {
             try await Task.sleep(for: .milliseconds(350))
             let found = try await JourneyService.search(value, around: region)
             try Task.checkCancellation()
+            guard searchQuery == value else { return }
             results = found
         } catch {
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, searchQuery == value else { return }
             searchIssue = "Search is unavailable. Check the connection and try again."
         }
         searching = false
@@ -438,27 +487,60 @@ struct JourneyView: View {
             }
             return
         }
-        calculating = true; plans = []
+        calculating = true; locating = true; plans = []
+        let key = routeKey
+        let fix: CLLocation
+        do {
+            fix = try await location.currentFix()
+            try Task.checkCancellation()
+        } catch {
+            guard !Task.isCancelled, key == routeKey else { return }
+            routeIssue = error.localizedDescription
+            calculating = false; locating = false
+            return
+        }
+        guard key == routeKey else { return }
+        locating = false
+        let source = JourneyPlace(name: "Your location", subtitle: "", latitude: fix.coordinate.latitude, longitude: fix.coordinate.longitude)
         do {
             let options = try await JourneyService.routes(from: source, to: destination, via: stop, avoidingTolls: avoidTolls)
             try Task.checkCancellation()
+            guard key == routeKey else { return }
             plans = Array(options.prefix(3))
             if plans.isEmpty { routeIssue = "Apple Maps has no driving route for this journey." }
         } catch {
-            guard !Task.isCancelled else { return }
-            routeIssue = "Directions are unavailable for this journey. Check the connection or choose another destination."
+            guard !Task.isCancelled, key == routeKey else { return }
+            if let error = error as? MKError, error.code == .directionsNotFound {
+                routeIssue = "Apple Maps has no driving route for this journey."
+            } else {
+                routeIssue = "Directions are unavailable for this journey. Check the connection or choose another destination."
+            }
         }
         calculating = false
     }
 
+    private var navigationTitle: String {
+        if #unavailable(iOS 18.4, macCatalyst 18.4), let stop { return "Navigate to \(stop.name) first in Apple Maps" }
+        return "Start navigation in Apple Maps"
+    }
+
     private func openMaps() {
-        guard let destination, let plan, !demo else { return }
-        let target = stop ?? destination
-        let sourceItem = origin == nil ? source.mapItem : MKMapItem.forCurrentLocation()
-        let success = MKMapItem.openMaps(with: [sourceItem, target.mapItem], launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving])
-        if success {
-            if startedID == nil { startedID = history.start(plan, to: destination) }
-        } else { mapsIssue = true }
+        guard let destination, !demo, !openingMaps else { return }
+        let planAtLaunch = plan
+        let key = routeKey
+        openingMaps = true
+        Task { @MainActor in
+            let opened = await JourneyService.openMaps(to: destination, via: stop, avoidingTolls: avoidTolls)
+            openingMaps = false
+            guard key == routeKey else { return }
+            if opened, startedID == nil {
+                if #unavailable(iOS 18.4, macCatalyst 18.4), let stop {
+                    startedID = history.start(nil, to: stop)
+                } else {
+                    startedID = history.start(planAtLaunch, to: destination)
+                }
+            } else if !opened { mapsIssue = true }
+        }
     }
 
     private func optionTitle(_ index: Int, _ option: JourneyPlan) -> String {
@@ -474,7 +556,7 @@ struct JourneyView: View {
 }
 
 private enum JourneySheet: String, Identifiable {
-    case details, stops, ride, road
+    case details, traffic, stops, ride, road
     var id: Self { self }
 }
 
@@ -482,17 +564,16 @@ struct JourneyMap: View {
     let region: MKCoordinateRegion
     let plans: [JourneyPlan]
     let selected: JourneyPlan?
-    let source: JourneyPlace
     let destination: JourneyPlace?
     let stop: JourneyPlace?
     let style: String
-    let night: Bool
+    let theme: String
+    let showUser: Bool
     @State private var position: MapCameraPosition = .automatic
 
     var body: some View {
         Map(position: $position) {
-            UserAnnotation()
-            Marker(source.name, coordinate: source.coordinate).tint(.teal)
+            if showUser { UserAnnotation { TuJuVehicleMarker() } }
             if let destination { Marker(destination.name, coordinate: destination.coordinate).tint(.blue) }
             if let stop { Marker(stop.name, systemImage: "signpost.right", coordinate: stop.coordinate).tint(.orange) }
             ForEach(plans.filter { $0.id != selected?.id }) { option in
@@ -506,13 +587,15 @@ struct JourneyMap: View {
                 }
             }
         }
-        .mapStyle(.standard(elevation: style == "Daylight" ? .flat : .realistic, emphasis: style == "Terrain" ? .muted : .automatic))
-        .environment(\.colorScheme, night ? .dark : .light)
-        .onChange(of: selected?.id, initial: true) { _, _ in
+        .mapStyle(style == "Terrain" ? .hybrid(elevation: .realistic) : .standard(elevation: style == "Default 3D" ? .realistic : .flat))
+        .tujuMapColors(theme: theme)
+        .onChange(of: "\(destination?.id ?? "")|\(selected?.id.uuidString ?? "")", initial: true) { _, _ in
             if let rect = selected?.bounds, !rect.isNull {
                 // Leave room beneath the polyline for the route chooser.
                 let w = max(1800, rect.width), h = max(1800, rect.height)
                 position = .rect(MKMapRect(x: rect.midX - w * 0.8, y: rect.minY - h * 0.8, width: w * 1.6, height: h * 4))
+            } else if let destination {
+                position = .region(.init(center: destination.coordinate, latitudinalMeters: 3500, longitudinalMeters: 3500))
             } else { position = .region(region) }
         }
     }

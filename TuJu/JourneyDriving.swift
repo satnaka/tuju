@@ -16,6 +16,9 @@ struct JourneyDriveView: View {
     @AppStorage("tuju.showSpeedLimit") private var speedLimit = true
     @AppStorage("tuju.showRoadNames") private var roadNames = true
     @AppStorage("tuju.voiceLanguage") private var language = "ms-MY"
+    @AppStorage("tuju.voiceAccent") private var accent = ""
+    @AppStorage("tuju.mapStyle") private var mapStyle = "Daylight"
+    @AppStorage("tuju.mapTheme") private var mapTheme = "TuJu Blue"
     @AppStorage("tuju.voiceDetail") private var voiceDetail = "Essential directions"
     @State private var current = 0
     @State private var expanded = true
@@ -33,14 +36,14 @@ struct JourneyDriveView: View {
             Button { expanded.toggle() } label: {
                 VStack(spacing: 4) {
                     Capsule().fill(JourneyInk.blue.opacity(0.42)).frame(width: 42, height: 4)
-                    Text(JourneyFormat.time(estimate.duration)).font(.title.bold())
-                    Text(JourneyFormat.distance(estimate.distance) + (demo ? " · Arrive by " + estimate.sampleArrival : " · Estimated journey"))
+                    Text(JourneyFormat.time(demo ? estimate.duration : plan.duration)).font(.title.bold())
+                    Text(JourneyFormat.distance(demo ? estimate.distance : plan.distance) + (demo ? " · Arrive by " + estimate.sampleArrival : " · Full route estimate"))
                         .font(.subheadline.weight(.semibold)).foregroundStyle(JourneyInk.navy.opacity(0.73))
                 }.frame(maxWidth: .infinity).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityHint("Expand or collapse journey controls")
             if expanded {
-                HStack { Text("\(Int((estimate.progress * 100).rounded()))% complete").font(.caption2); Spacer() }
                 if demo {
+                    HStack { Text("\(Int((estimate.progress * 100).rounded()))% complete").font(.caption2); Spacer() }
                     GeometryReader { track in
                         ZStack(alignment: .leading) {
                             ProgressView(value: estimate.progress).tint(.blue).padding(.trailing, 19)
@@ -55,7 +58,9 @@ struct JourneyDriveView: View {
                                 .allowsHitTesting(false)
                         }.frame(height: track.size.height)
                     }.frame(height: 27)
-                } else { ProgressView(value: estimate.progress) }
+                } else if !plan.steps.isEmpty {
+                    Text("Step \(current + 1) of \(plan.steps.count)").font(.caption)
+                }
                 HStack(spacing: 8) {
                     driveButton("Exit", symbol: "xmark", action: onExit)
                     if demo {
@@ -158,7 +163,7 @@ struct JourneyDriveView: View {
 
     private var guidance: some View {
         HStack(spacing: 18) {
-            Image(systemName: current == 0 ? "arrow.up" : (current + 1 >= plan.steps.count ? "flag.checkered" : "arrow.up.left"))
+            Image(systemName: demo ? (current == 0 ? "arrow.up" : (current + 1 >= plan.steps.count ? "flag.checkered" : "arrow.up.left")) : "list.number")
                 .font(.system(size: 34, weight: .semibold))
             VStack(alignment: .leading, spacing: 2) {
                 Text(JourneyFormat.distance(step?.distance ?? plan.distance)).font(.title.bold())
@@ -166,7 +171,7 @@ struct JourneyDriveView: View {
                 if roadNames && current > 0 { Text(plan.name).font(.caption2).lineLimit(1) }
             }
             Spacer()
-            Text(demo ? "Concept" : "Preview").font(.caption2.weight(.semibold)).foregroundStyle(.white.opacity(0.8))
+            Text(demo ? "Concept" : "Step preview").font(.caption2.weight(.semibold)).foregroundStyle(.white.opacity(0.8))
         }.foregroundStyle(.white).padding(14).frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(red: 0.15, green: 0.24, blue: 0.34).opacity(0.97), in: RoundedRectangle(cornerRadius: 20))
     }
@@ -179,10 +184,13 @@ struct JourneyDriveView: View {
             }
         } else {
             Map(initialPosition: plan.bounds.isNull ? .automatic : .rect(plan.bounds)) {
+                UserAnnotation { TuJuVehicleMarker() }
                 ForEach(plan.paths.indices, id: \.self) { i in MapPolyline(plan.paths[i]).stroke(.blue, lineWidth: 5) }
                 if let path = step?.path { MapPolyline(path).stroke(.orange, lineWidth: 6) }
                 Marker(destination.name, coordinate: destination.coordinate)
             }
+            .mapStyle(mapStyle == "Terrain" ? .hybrid(elevation: .realistic) : .standard(elevation: mapStyle == "Default 3D" ? .realistic : .flat))
+            .tujuMapColors(theme: mapTheme)
         }
     }
 
@@ -236,7 +244,9 @@ struct JourneyDriveView: View {
         let instruction = inMalay ? (translated[step.instruction] ?? step.instruction) : step.instruction
         let words = voiceDetail == "Detailed directions" ? instruction + ", " + JourneyFormat.distance(step.distance) : instruction
         let speech = AVSpeechUtterance(string: words)
-        speech.voice = AVSpeechSynthesisVoice(language: demo ? language : Locale.current.identifier.replacingOccurrences(of: "_", with: "-"))
+        let spokenLanguage = demo ? language : Locale.current.identifier.replacingOccurrences(of: "_", with: "-")
+        speech.voice = TuJuVoice.voice(language: spokenLanguage, accent: accent)
+        if voiceDetail == "Simple" { speech.rate = AVSpeechUtteranceDefaultSpeechRate * 0.85 }
         narrator.stopSpeaking(at: .immediate)
         narrator.speak(speech)
     }

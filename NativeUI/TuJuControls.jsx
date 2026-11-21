@@ -192,8 +192,8 @@ function Journey({ expanded, recentName, recentDetail, action, measure }) {
             <PlaceRow
               icon="HomeStop"
               highlighted
-              title="Plan your next R&R stop"
-              detail="Compare crowd & parking information"
+              title="Preview R&R stops"
+              detail="One Utama concept route · Offline preview"
               onPress={() => action("stops")}
             />
           </>

@@ -19,7 +19,6 @@ struct JourneyStopsView: View {
     let plan: JourneyPlan
     let demo: Bool
     let selected: JourneyPlace?
-    var initialName: String? = nil
     let onSelect: (JourneyPlace?) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var detail: ConceptStop?
@@ -57,9 +56,6 @@ struct JourneyStopsView: View {
                     } label: { Image(systemName: "chevron.left") }.accessibilityLabel("Back")
                 }
                 if demo { ToolbarItem(placement: .topBarTrailing) { Text("Concept").font(.caption2).foregroundStyle(.secondary) } }
-            }
-            .onAppear {
-                if let initialName { detail = initialName == ConceptStop.siteB.name ? .siteB : .siteA }
             }
             .task(id: retry) {
                 guard !demo else { return }

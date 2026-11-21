@@ -2,9 +2,24 @@ import SwiftUI
 
 @main
 struct TuJuApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var session = TuJuSession()
+    @AppStorage("tuju.completedWelcome") private var completedWelcome = false
+
     var body: some Scene {
         WindowGroup {
-            RootView()
+            Group {
+                if completedWelcome {
+                    RootView()
+                } else {
+                    TuJuWelcomeView { completedWelcome = true }
+                }
+            }
+            .environmentObject(session)
+            .onOpenURL { session.handleRedirect($0) }
+            .task(id: scenePhase) {
+                if scenePhase == .active { await session.restoreIfNeeded() }
+            }
                 #if targetEnvironment(macCatalyst)
                 .padding(.vertical, 14)
                 .background(PreviewWindow())

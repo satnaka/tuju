@@ -1,6 +1,7 @@
 import CoreLocation
 import Foundation
 import MapKit
+import UIKit
 
 struct JourneyPlace: Identifiable, Codable, Hashable {
     var name: String
@@ -38,8 +39,8 @@ struct JourneyTrip: Identifiable, Codable {
     var id: UUID
     var destination: JourneyPlace
     var date: Date
-    var distance: Double
-    var duration: TimeInterval
+    var distance: Double?
+    var duration: TimeInterval?
     var isDemo: Bool
 }
 
@@ -72,9 +73,9 @@ final class JourneyHistory: ObservableObject {
         write(saved, to: "saved")
     }
 
-    func start(_ plan: JourneyPlan, to place: JourneyPlace, demo: Bool = false) -> UUID {
+    func start(_ plan: JourneyPlan?, to place: JourneyPlace, demo: Bool = false) -> UUID {
         let id = UUID()
-        let trip = JourneyTrip(id: id, destination: place, date: .now, distance: plan.distance, duration: plan.duration, isDemo: demo)
+        let trip = JourneyTrip(id: id, destination: place, date: .now, distance: plan?.distance, duration: plan?.duration, isDemo: demo)
         trips = [trip] + trips.prefix(99)
         write(trips, to: "trips")
         return id
@@ -148,15 +149,72 @@ struct JourneyPlan: Identifiable {
 enum JourneyService {
     static func search(_ query: String, around region: MKCoordinateRegion) async throws -> [JourneyPlace] {
         let request = MKLocalSearch.Request()
-        request.naturalLanguageQuery = query
         request.region = region
         request.resultTypes = [.address, .pointOfInterest]
+        let categories: [MKPointOfInterestCategory]
+        switch query.lowercased() {
+        case "fuel", "petrol", "petrol station", "petrol stations", "gas station":
+            request.naturalLanguageQuery = "Gas station"
+            categories = [.gasStation]
+        case "food", "restaurants":
+            request.naturalLanguageQuery = "Restaurants"
+            categories = [.restaurant, .cafe, .bakery]
+        case "ev charge", "ev charging", "ev charger", "ev charging stations":
+            request.naturalLanguageQuery = "Electric vehicle charging"
+            categories = [.evCharger]
+        case "parking":
+            request.naturalLanguageQuery = "Parking"
+            categories = [.parking]
+        case "hotel", "hotels":
+            request.naturalLanguageQuery = "Hotels"
+            categories = [.hotel]
+        case "hospital", "hospitals":
+            request.naturalLanguageQuery = "Hospital"
+            categories = [.hospital]
+        case "r&r", "r&r rest area", "rest stops", "rest stop", "rest areas":
+            request.naturalLanguageQuery = "Rest area"
+            request.resultTypes = .pointOfInterest
+            categories = []
+        case "one utama", "1 utama":
+            request.naturalLanguageQuery = "1 Utama Shopping Centre, Petaling Jaya, Malaysia"
+            categories = []
+        default:
+            request.naturalLanguageQuery = query
+            categories = []
+        }
+        if !categories.isEmpty {
+            request.pointOfInterestFilter = .init(including: categories)
+            request.resultTypes = .pointOfInterest
+        }
         let search = MKLocalSearch(request: request)
-        let response = try await withTaskCancellationHandler {
-            try await search.start()
-        } onCancel: { search.cancel() }
+        let response: MKLocalSearch.Response
+        do {
+            response = try await withTaskCancellationHandler { try await search.start() } onCancel: { search.cancel() }
+        } catch let error as MKError where error.code == .placemarkNotFound {
+            return []
+        }
         var seen = Set<String>()
         return response.mapItems.compactMap(JourneyPlace.init).filter { seen.insert($0.id).inserted }
+    }
+
+    @MainActor
+    static func openMaps(to destination: JourneyPlace, via stop: JourneyPlace?, avoidingTolls: Bool) async -> Bool {
+        if #available(iOS 18.4, macCatalyst 18.4, *), stop != nil || avoidingTolls {
+            var components = URLComponents()
+            components.scheme = "https"
+            components.host = "maps.apple.com"
+            components.path = "/directions"
+            var items = [URLQueryItem(name: "destination", value: "\(destination.latitude),\(destination.longitude)"),
+                         URLQueryItem(name: "mode", value: "driving")]
+            if let stop { items.append(.init(name: "waypoint", value: "\(stop.latitude),\(stop.longitude)")) }
+            if avoidingTolls { items.append(.init(name: "avoid", value: "tolls")) }
+            components.queryItems = items
+            guard let url = components.url else { return false }
+            return await UIApplication.shared.open(url, options: [.universalLinksOnly: true])
+        }
+        // A single destination with the driving option tells Maps to use its current location.
+        let target = (stop ?? destination).mapItem
+        return await target.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDriving], from: nil)
     }
 
     static func routes(from origin: JourneyPlace, to destination: JourneyPlace, via stop: JourneyPlace?, avoidingTolls: Bool) async throws -> [JourneyPlan] {

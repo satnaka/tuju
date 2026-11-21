@@ -91,42 +91,49 @@ struct AccountSheet<Content: View>: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
-        .preferredColorScheme(.light)
+        .tujuLightChrome()
         .tint(AccountPalette.blue)
     }
 }
 
 struct TuJuProfileView: View {
-    @AppStorage("tuju.displayName") private var name = "Amir"
+    @EnvironmentObject private var session: TuJuSession
+    @AppStorage("tuju.displayName") private var localName = ""
     @AppStorage(TuJuRewardsLedger.storageKey) private var data = Data()
-    @AppStorage("tuju.profileSignedIn") private var signedIn = true
     @State private var confirmLogout = false
     @State private var editing = false
     @State private var draftName = ""
+    @State private var showSignIn = false
+    @State private var showWelcome = false
+    @State private var sessionError: String?
     private var ledger: TuJuRewardsLedger? { TuJuRewardsLedger.decode(data) }
+    private var name: String { session.displayName ?? (localName.isEmpty ? "Guest" : localName) }
+
     var body: some View {
-        AccountSheet {
-            if signedIn {
-                profile
-            } else {
-                AccountPage(title: "Profile", subtitle: "Your journeys, preferences and rewards", centered: true) {
-                    AccountCard {
-                        Text("Local demo profile").font(.headline)
-                        Text("Continue with your saved profile to see your rewards and preferences.").font(.subheadline)
-                    }
-                    Button { signedIn = true } label: { AccountAction(title: "Continue as " + name) }
-                }
-            }
+        AccountSheet { profile }
+        .sheet(isPresented: $showSignIn) {
+            TuJuAccountEntry(onContinue: { showSignIn = false }, onBack: { showSignIn = false })
         }
-        .confirmationDialog("Log out of this demo profile?", isPresented: $confirmLogout, titleVisibility: .visible) {
-            Button("Log out", role: .destructive) { signedIn = false }
+        .sheet(isPresented: $showWelcome) {
+            TuJuWelcomeView { showWelcome = false }
+        }
+        .confirmationDialog("Sign out of TuJu?", isPresented: $confirmLogout, titleVisibility: .visible) {
+            Button("Sign out", role: .destructive) {
+                do { try session.signOut() }
+                catch { sessionError = error.localizedDescription }
+            }
             Button("Cancel", role: .cancel) {}
-        } message: { Text("Your rewards and preferences stay on this device.") }
-        .alert("Edit profile name", isPresented: $editing) {
-            TextField("Name", text: $draftName)
+        } message: { Text("Trip history and map preferences are stored on this device.") }
+        .alert("Couldn’t sign out", isPresented: Binding(
+            get: { sessionError != nil }, set: { if !$0 { sessionError = nil } }
+        )) {
+            Button("OK") { sessionError = nil }
+        } message: { Text(sessionError ?? "") }
+        .alert("Edit on-device profile", isPresented: $editing) {
+            TextField("Display name", text: $draftName)
             Button("Cancel", role: .cancel) {}
             Button("Save") {
-                name = String(draftName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(48))
+                localName = String(draftName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(48))
             }.disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
     }
@@ -134,7 +141,7 @@ struct TuJuProfileView: View {
     private var profile: some View {
         AccountPage(title: "Profile", subtitle: "Your journeys, preferences and rewards", centered: true) {
             Button {
-                draftName = name
+                draftName = localName
                 editing = true
             } label: {
                 AccountCard {
@@ -143,15 +150,20 @@ struct TuJuProfileView: View {
                             .frame(width: 48, height: 48).background(AccountPalette.mist, in: Circle())
                         VStack(alignment: .leading, spacing: 4) {
                             Text(name).font(.title3.bold())
-                            Text("Explorer · " + badgeSummary).font(.caption)
+                            Text((session.identity == nil ? "On-device profile" : "Signed in to TuJu") + " · " + badgeSummary).font(.caption)
 
                         }
                         Spacer()
-                        Image(systemName: "pencil").font(.caption)
+                        if session.identity == nil { Image(systemName: "pencil").font(.caption) }
                     }
                 }
             }
-            .buttonStyle(.plain).accessibilityLabel("Edit profile name, " + name)
+            .buttonStyle(.plain)
+            .disabled(session.identity != nil)
+            .accessibilityLabel(session.identity == nil ? "Edit on-device profile, " + name : "Signed in as " + name)
+            if session.isConfigured && session.identity == nil {
+                Button { showSignIn = true } label: { AccountAction(title: "Sign in to TuJu") }
+            }
             NavigationLink {
                 AccountRewardsOverview()
             } label: {
@@ -160,7 +172,7 @@ struct TuJuProfileView: View {
                         Text("TuJu Rewards").font(.headline)
                         if let ledger {
                             Text("\(ledger.balance) points").font(.title.bold())
-                            Text("Explorer · \(ledger.xp) Journey XP").font(.caption)
+                            Text("\(ledger.tierName) · \(ledger.xp) Journey XP").font(.caption)
                         }
                         Text("View rewards  ›").font(.caption.weight(.semibold))
                     }
@@ -173,7 +185,7 @@ struct TuJuProfileView: View {
             .buttonStyle(.plain)
             AccountCard {
                 NavigationLink { AccountAchievements() } label: {
-                    AccountRowLabel(title: "Your achievements", detail: (ledger?.completedCount ?? 0) >= 10 ? "2 badges" : "1 badge", art: "AccountAward")
+                    AccountRowLabel(title: "Your achievements", detail: ledger.map { $0.unlockedMilestones.count == 1 ? "1 badge" : "\($0.unlockedMilestones.count) badges" } ?? "", art: "AccountAward")
                 }
             }
             Text("NAVIGATION & PREFERENCES").font(.caption.weight(.semibold))
@@ -188,14 +200,15 @@ struct TuJuProfileView: View {
                     AccountRowLabel(title: "Map appearance", art: "AccountMap")
                 }
             }
-            Button("Log out", role: .destructive) { confirmLogout = true }
-                .frame(maxWidth: .infinity).padding(.vertical, 12)
-                .background(.white, in: Capsule()).padding(.top, 24)
+            Button { showWelcome = true } label: { AccountAction(title: "Welcome tour", prominent: false) }
+            if session.identity != nil {
+                Button { confirmLogout = true } label: { AccountAction(title: "Sign out", prominent: false) }
+            }
         }
     }
 
     private var badgeSummary: String {
-        (ledger?.completedCount ?? 0) >= 10 ? "2 achievements unlocked" : "1 achievement unlocked"
+        ledger?.achievementSummary ?? "Rewards unavailable"
     }
 }
 
@@ -208,6 +221,7 @@ private struct AccountSettings: View {
     @AppStorage("tuju.mapTheme") private var theme = "TuJu Blue"
     @AppStorage("tuju.voiceLanguage") private var language = "ms-MY"
     @AppStorage("tuju.voiceDetail") private var detail = "Essential directions"
+    @AppStorage("tuju.vehicleIcon") private var vehicle = TuJuVehicle.arrow
     var body: some View {
         AccountPage(title: "Navigation settings", subtitle: "Make the journey feel like yours", centered: true) {
             AccountCard {
@@ -228,6 +242,8 @@ private struct AccountSettings: View {
                     AccountRowLabel(title: "Map appearance", detail: style)
                 }
                 Text(theme).font(.caption).foregroundStyle(.secondary)
+                Divider()
+                TuJuVehiclePicker(selection: $vehicle)
             }
             AccountCard {
                 Toggle("Speed limit", isOn: $showSpeedLimit)
@@ -239,7 +255,28 @@ private struct AccountSettings: View {
     }
 }
 
+enum TuJuVoice {
+    static func voice(language: String, accent: String) -> AVSpeechSynthesisVoice? {
+        let sameLanguage = !accent.isEmpty && accent.split(separator: "-").first == language.split(separator: "-").first
+        if sameLanguage, let voice = AVSpeechSynthesisVoice(language: accent) { return voice }
+        return AVSpeechSynthesisVoice(language: language)
+    }
+
+    static func installedAccents(for language: String) -> [String] {
+        let prefix = language.split(separator: "-").first
+        return Set(AVSpeechSynthesisVoice.speechVoices().map(\.language).filter {
+            $0.split(separator: "-").first == prefix
+        }).sorted { localized($0) < localized($1) }
+    }
+
+    static func localized(_ language: String) -> String {
+        Locale.current.localizedString(forIdentifier: language) ?? language
+    }
+}
+
 private struct AccountVoiceSettings: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("tuju.voiceAccent") private var accent = ""
     @AppStorage("tuju.voiceLanguage") private var language = "ms-MY"
     @AppStorage("tuju.voiceDetail") private var detail = "Essential directions"
     @State private var speech = AVSpeechSynthesizer()
@@ -251,6 +288,25 @@ private struct AccountVoiceSettings: View {
                     Text("Bahasa Melayu").tag("ms-MY")
                     Text("English").tag("en-GB")
                 }.pickerStyle(.segmented)
+            }
+            AccountCard {
+                let accents = TuJuVoice.installedAccents(for: language)
+                Picker("Choose accent", selection: $accent) {
+                    Text("Standard").tag("")
+                    ForEach(accents, id: \.self) { code in Text(TuJuVoice.localized(code)).tag(code) }
+                }
+                .frame(minHeight: 44)
+                Button {
+                    speech.stopSpeaking(at: .immediate)
+                    let short = detail == "Simple"
+                    let malay = language == "ms-MY"
+                    let words = short ? (malay ? "Belok kiri." : "Turn left.")
+                        : (malay ? "Dalam dua ratus meter, belok kiri." : "In two hundred metres, turn left.")
+                    let sample = AVSpeechUtterance(string: words)
+                    sample.voice = TuJuVoice.voice(language: language, accent: accent)
+                    speech.speak(sample)
+                } label: { AccountAction(title: "Play voice preview", prominent: false) }
+                .disabled(detail == "Mute")
             }
             AccountCard {
                 Text("Directions").font(.headline)
@@ -267,13 +323,11 @@ private struct AccountVoiceSettings: View {
                     }.accessibilityAddTraits(detail == choice ? .isSelected : [])
                 }
             }
-            Button {
-                speech.stopSpeaking(at: .immediate)
-                let sample = AVSpeechUtterance(string: language == "ms-MY" ? "Dalam dua ratus meter, belok kiri." : "In two hundred metres, turn left.")
-                sample.voice = AVSpeechSynthesisVoice(language: language)
-                speech.speak(sample)
-            } label: { AccountAction(title: "Preview voice") }
-            .disabled(detail == "Mute").opacity(detail == "Mute" ? 0.5 : 1)
+            Button { dismiss() } label: { AccountAction(title: "Save voice settings") }
+        }
+        .onChange(of: language) { _, newValue in
+            if !TuJuVoice.installedAccents(for: newValue).contains(accent) { accent = "" }
+            speech.stopSpeaking(at: .immediate)
         }
         .onDisappear { speech.stopSpeaking(at: .immediate) }
     }
@@ -284,18 +338,31 @@ struct TuJuMapAppearanceView: View {
 }
 
 private struct AccountMapSettings: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("tuju.nightMode") private var nightMode = TuJuNightMode.initial
+    @AppStorage("tuju.vehicleIcon") private var vehicle = TuJuVehicle.arrow
     @AppStorage("tuju.mapTheme") private var theme = "TuJu Blue"
     @AppStorage("tuju.mapStyle") private var style = "Daylight"
     var body: some View {
         AccountPage(title: "Map appearance", subtitle: "Choose your preferred view", centered: true) {
             AccountCard {
                 Text("Colour theme").font(.headline)
-                options(["TuJu Blue", "Night Blue"], ["BluePreview", "NightPreview"], selection: $theme)
+                options(["TuJu Blue", "Night Blue"], ["BluePreview", "NightPreview"], selection: Binding(
+                    get: { theme }, set: { theme = $0; nightMode = .manual }
+                ))
             }
             AccountCard {
                 Text("Map style").font(.headline)
                 options(["Default 3D", "Daylight", "Terrain"], ["3DPreview", "DaylightPreview", "TerrainPreview"], selection: $style)
             }
+            AccountCard {
+                Picker("Night mode", selection: $nightMode) {
+                    Text("Automatic").tag(TuJuNightMode.automatic)
+                    Text("Selected colour theme").tag(TuJuNightMode.manual)
+                }.frame(minHeight: 44)
+                TuJuVehiclePicker(selection: $vehicle)
+            }
+            Button { dismiss() } label: { AccountAction(title: "Apply appearance") }
         }
     }
 
@@ -322,4 +389,81 @@ private struct AccountMapSettings: View {
             }.accessibilityAddTraits(selection.wrappedValue == label ? .isSelected : [])
         }
     }
+}
+
+enum TuJuVehicle: String, CaseIterable {
+    case arrow = "Navigation arrow", car = "Car", motorcycle = "Motorcycle"
+
+    var symbol: String {
+        switch self {
+        case .arrow: return "location.north.fill"
+        case .car: return "car.fill"
+        case .motorcycle: return "motorcycle.fill"
+        }
+    }
+}
+
+private struct TuJuVehiclePicker: View {
+    @Binding var selection: TuJuVehicle
+
+    var body: some View {
+        Picker("Vehicle icon", selection: $selection) {
+            ForEach(TuJuVehicle.allCases, id: \.self) { icon in
+                Label(icon.rawValue, systemImage: icon.symbol).tag(icon)
+            }
+        }.frame(minHeight: 44)
+    }
+}
+
+struct TuJuVehicleMarker: View {
+    @AppStorage("tuju.vehicleIcon") private var icon = TuJuVehicle.arrow
+
+    var body: some View {
+        Image(systemName: icon.symbol).font(.body.bold()).foregroundStyle(.white)
+            .frame(width: 34, height: 34)
+            .background(AccountPalette.blue, in: Circle())
+            .overlay(Circle().stroke(.white, lineWidth: 2))
+            .accessibilityLabel("Your location")
+    }
+}
+
+private enum TuJuNightMode: String {
+    case automatic, manual
+    static var initial: Self { UserDefaults.standard.string(forKey: "tuju.mapTheme") == nil ? .automatic : .manual }
+}
+
+private struct TuJuSystemScheme: EnvironmentKey {
+    static let defaultValue: ColorScheme? = nil
+}
+
+private extension EnvironmentValues {
+    var tujuSystemScheme: ColorScheme? {
+        get { self[TuJuSystemScheme.self] }
+        set { self[TuJuSystemScheme.self] = newValue }
+    }
+}
+
+private struct TuJuLightChrome: ViewModifier {
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.tujuSystemScheme) private var inherited
+
+    func body(content: Content) -> some View {
+        content.environment(\.tujuSystemScheme, inherited ?? scheme).environment(\.colorScheme, .light)
+    }
+}
+
+private struct TuJuMapColors: ViewModifier {
+    let theme: String
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.tujuSystemScheme) private var inherited
+    @AppStorage("tuju.nightMode") private var mode = TuJuNightMode.initial
+
+    func body(content: Content) -> some View {
+        content.environment(\.colorScheme, mode == .automatic ? (inherited ?? scheme) : (theme == "Night Blue" ? .dark : .light))
+    }
+}
+
+extension View {
+    func tujuLightChrome() -> some View { modifier(TuJuLightChrome()) }
+    func tujuMapColors(theme: String) -> some View { modifier(TuJuMapColors(theme: theme)) }
 }

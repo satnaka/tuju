@@ -38,7 +38,7 @@ struct PlaceCollectionView: View {
 
 struct TripHistoryView: View {
     let trips: [JourneyTrip]
-    let plan: (JourneyPlace) -> Void
+    let plan: (JourneyPlace, Bool) -> Void
     var body: some View {
         NavigationStack {
             Group {
@@ -48,12 +48,12 @@ struct TripHistoryView: View {
                     } description: {
                         Text("Journeys you start in TuJu will appear here.")
                     } actions: {
-                        Button("Preview the One Utama trip") { plan(.oneUtama) }
+                        Button("Preview the One Utama trip") { plan(.oneUtama, true) }
                             .buttonStyle(.borderedProminent)
                     }
                 } else {
                     List(trips) { trip in
-                        Button { plan(trip.destination) } label: {
+                        Button { plan(trip.destination, trip.isDemo) } label: {
                             HStack {
                                 Image(systemName: "car.fill").foregroundStyle(.blue)
                                 VStack(alignment: .leading, spacing: 5) {
@@ -62,7 +62,9 @@ struct TripHistoryView: View {
                                         .font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Text(String(format: "%.0f km", trip.distance / 1000)).font(.caption)
+                                if let distance = trip.distance {
+                                    Text(String(format: "%.0f km", distance / 1000)).font(.caption)
+                                }
                             }.padding(.vertical, 6)
                         }
                     }

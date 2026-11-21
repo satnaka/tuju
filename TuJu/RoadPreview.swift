@@ -19,12 +19,13 @@ struct TuJuRoadPreviewView: View {
     }
 
     private enum Scene: Equatable {
-        case approach, toll, flyover(Level?)
+        case approach, toll, exitGuide, flyover(Level?)
 
         var background: String {
             switch self {
             case .approach: return "JourneySampleRoad"
             case .toll: return "RoadTollApproach"
+            case .exitGuide: return "RoadExitBackground"
             case .flyover(.lower): return "RoadUnderpass"
             case .flyover: return "RoadFlyover"
             }
@@ -76,8 +77,21 @@ struct TuJuRoadPreviewView: View {
                             .heroGlass(.floating, radius: 12)
                             .accessibilityLabel("Preview speed, 60 kilometres per hour")
                             Spacer()
+                            if scene == .exitGuide {
+                                HStack(spacing: 2) {
+                                    Image("RoadExitLane").resizable().scaledToFit().frame(width: 39, height: 39)
+                                    ForEach(0..<3) { _ in
+                                        Image("RoadStraightLane").resizable().scaledToFit().frame(width: 44, height: 44)
+                                    }
+                                }.padding(.horizontal, 6).padding(.vertical, 3)
+                                    .background(navy.opacity(0.94), in: RoundedRectangle(cornerRadius: 15))
+                                    .accessibilityElement(children: .ignore)
+                                    .accessibilityLabel("Use the left exit lane. The three right lanes continue straight.")
+                            }
                         }
-                        tripCard
+                        if scene == .exitGuide {
+                            action("Back to road preview") { scene = .approach }
+                        } else { tripCard }
                     }
                     .padding(.horizontal, 14)
                     .padding(.bottom, 8)
@@ -94,6 +108,19 @@ struct TuJuRoadPreviewView: View {
         switch scene {
         case .approach:
             banner(icon: "arrow.up", title: "Continue straight", detail: "LDP toll plaza ahead")
+        case .exitGuide:
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    Image("RoadExitTurn").resizable().scaledToFit().frame(width: 58, height: 58)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("90 m").font(.largeTitle.bold())
+                        Text("Exit to 103 to Shah Alam, Klang").font(.subheadline)
+                    }
+                    Spacer()
+                }.foregroundStyle(.white).padding(12).background(navy.opacity(0.95))
+                Image("RoadExitSign").resizable().scaledToFit()
+                    .accessibilityLabel("Exit 103 to Shah Alam and Klang on the left. E1 to Kuala Lumpur and Ipoh continues straight.")
+            }.clipShape(RoundedRectangle(cornerRadius: 21))
         case .toll:
             VStack(spacing: 12) {
                 headline(icon: "creditcard", title: "500 m", detail: "LDP toll plaza · Centre lane for RFID")
@@ -175,12 +202,15 @@ struct TuJuRoadPreviewView: View {
             switch scene {
             case .approach:
                 action("Preview toll lanes") { scene = .toll }
+            action("Preview exit 103") { scene = .exitGuide }
             case .toll:
                 action("Preview flyover") { scene = .flyover(nil) }
             case .flyover(nil):
                 EmptyView()
             case .flyover:
                 action("Finish preview") { dismiss() }
+        case .exitGuide:
+            EmptyView()
             }
         }
         .padding(14)

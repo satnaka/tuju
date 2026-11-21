@@ -7,6 +7,7 @@ project 'TuJu.xcodeproj'
 prepare_react_native_project!
 
 target 'TuJu' do
+  pod 'AppAuth', '~> 3.0.0'
   native_app = File.join(__dir__, 'NativeUI')
   config = use_native_modules!(['node', '-e', "process.chdir('NativeUI'); process.argv = ['node', 'cli', 'config']; require('./NativeUI/node_modules/@react-native-community/cli').run()"])
   use_react_native!(

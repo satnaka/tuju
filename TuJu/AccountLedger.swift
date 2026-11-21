@@ -33,6 +33,38 @@ struct TuJuCompletedJourney: Codable, Identifiable {
     let date: Date
 }
 
+enum TuJuMilestone: String, CaseIterable, Identifiable {
+    case firstJourney = "First Journey"
+    case explorer = "Explorer"
+    case navigator = "Navigator"
+    case pathfinder = "Pathfinder"
+    case companion = "Companion"
+    case signature = "Signature"
+
+    var id: Self { self }
+    var challenge: String {
+        switch self {
+        case .firstJourney: "Complete your first journey."
+        case .explorer: "Complete ten journeys."
+        case .navigator: "Reach 2,000 Journey XP."
+        case .pathfinder: "Finish a journey recorded on this device."
+        case .companion: "Use a reward voucher."
+        case .signature: "Reach 5,000 Journey XP."
+        }
+    }
+
+    func isUnlocked(in ledger: TuJuRewardsLedger) -> Bool {
+        switch self {
+        case .firstJourney: ledger.completedCount >= 1
+        case .explorer: ledger.completedCount >= 10
+        case .navigator: ledger.xp >= 2_000
+        case .pathfinder: !ledger.journeys.isEmpty
+        case .companion: ledger.vouchers.contains { $0.used != nil }
+        case .signature: ledger.xp >= 5_000
+        }
+    }
+}
+
 struct TuJuRewardsLedger: Codable {
     static let storageKey = "tuju.rewardLedger.v1"
     var vouchers: [TuJuVoucher] = []
@@ -41,6 +73,17 @@ struct TuJuRewardsLedger: Codable {
     var balance: Int { 350 + 20 * journeys.count - vouchers.reduce(0) { $0 + $1.reward.cost } }
     var xp: Int { 120 + 20 * journeys.count }
     var completedCount: Int { 6 + journeys.count }
+    var unlockedMilestones: [TuJuMilestone] { TuJuMilestone.allCases.filter { $0.isUnlocked(in: self) } }
+    var tierName: String { xp >= 5_000 ? "Trailblazer" : xp >= 2_000 ? "Navigator" : "Explorer" }
+    var nextTier: (name: String, xp: Int)? {
+        if xp < 2_000 { return ("Navigator", 2_000) }
+        if xp < 5_000 { return ("Trailblazer", 5_000) }
+        return nil
+    }
+    var achievementSummary: String {
+        let count = unlockedMilestones.count
+        return count == 1 ? "1 achievement unlocked" : "\(count) achievements unlocked"
+    }
 
     static func decode(_ data: Data?) -> Self? {
         guard let data, !data.isEmpty else { return Self() }
