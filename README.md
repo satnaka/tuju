@@ -29,7 +29,7 @@ Select the **TuJu** scheme and an iPhone destination, then press **Run**. For a 
 
 ## Account sign-in
 
-TuJu opens Auth0 Universal Login in the system browser. This checkout connects to TuJu’s development tenant. From the welcome tour, tap **I already have an account → Sign in to TuJu**. From Home, use **Profile → Sign in to TuJu**. Guest access is available from the welcome screen. Production Apple, Google and MyDigital ID registrations are managed by TuJu’s publisher. [Account configuration](Configuration/Authentication.md)
+TuJu opens Auth0 Universal Login in the system browser. This checkout connects to TuJu’s development tenant. From the welcome tour, tap **I already have an account → Sign in to TuJu**. From Home, use **Profile → Sign in to TuJu**. Guest access is available from the welcome screen. The development login page offers **Continue with Google** using TuJu’s own Google OAuth client. Apple and MyDigital ID setup is pending. [Account configuration](Configuration/Authentication.md)
 
 ## Design and implementation
 

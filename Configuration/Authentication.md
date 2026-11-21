@@ -9,7 +9,7 @@ The Xcode project connects to TuJu’s Auth0 development tenant by default. The 
 | Auth0 return to the iPhone | `com.satnaka.tuju:/oauth/callback` |
 | Upstream provider return to Auth0 | `https://dev-t8iqgoqdz3dyl208.us.auth0.com/login/callback` |
 
-The development login page offers email/password and Google. The Google connection currently uses Auth0’s development keys. Complete the publisher registrations and verify each provider with a real account before releasing it to travelers.
+The development login page offers email/password and **Continue with Google**. Its Google connection uses the Web application OAuth client registered in TuJu’s Google Cloud project. Native sign-in reached Google’s account chooser during verification, and the OAuth app remains in external Testing while TuJu prepares its verified homepage, privacy policy and terms of service. Apple and MyDigital ID still require publisher registrations. Before a public release, test each enabled sign-in with a real account and verify its return to the app.
 
 ## Set up TuJu with Auth0 Universal Login
 
