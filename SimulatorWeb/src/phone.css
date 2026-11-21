@@ -1,0 +1,228 @@
+.native-demo {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  container-type: inline-size;
+  background: #eff5f8;
+  color: #112a46;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.native-frame,
+.native-touch-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.native-frame {
+  display: block;
+  object-fit: fill;
+  user-select: none;
+  pointer-events: none;
+}
+.native-screen-name {
+  position: absolute;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.native-demo .native-touch {
+  position: absolute;
+  display: block;
+  appearance: none;
+  cursor: pointer;
+  background: transparent;
+  color: transparent;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+  padding: 0;
+  touch-action: manipulation;
+}
+.native-touch:focus-visible {
+  outline: 3px solid #125dda;
+  outline-offset: -3px;
+  background: #0469db18;
+}
+.native-heart {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-size: 5cqw;
+  border-radius: 100%;
+  color: #1263c9;
+  background: #f5fbff;
+}
+.native-dim {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #12203569;
+  z-index: 2;
+}
+.native-alert {
+  width: 72%;
+  border: 1px solid #ffffffaa;
+  border-radius: 5.5cqw;
+  text-align: center;
+  overflow: hidden;
+  background: #f5f8fbf2;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 2cqw 8cqw #06274830;
+}
+.native-alert strong {
+  display: block;
+  margin: 4.6cqw 4cqw 2cqw;
+  font-size: 4.1cqw;
+  line-height: 1.2;
+}
+.native-alert p {
+  margin: 0 4cqw 4cqw;
+  font-size: 3.35cqw;
+  line-height: 1.35;
+}
+.native-alert button {
+  display: block;
+  width: 100%;
+  appearance: none;
+  border: 0;
+  border-top: 1px solid #9ba9b45c;
+  background: transparent;
+  color: #0059b8;
+  font-weight: 600;
+  padding: 2.7cqw;
+  cursor: pointer;
+  font-size: 3.8cqw;
+}
+.tuju-search-input {
+  position: absolute;
+  appearance: none;
+  border: 0;
+  outline-offset: 0;
+  border-radius: 4px;
+  background: transparent;
+  font:
+    400 3.7cqw -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  color: #122e48;
+  caret-color: #0b62c8;
+}
+.tuju-search-input::placeholder {
+  color: transparent;
+}
+.tuju-search-input:focus,
+.tuju-search-input.filled {
+  background: #eaf1f4;
+}
+.tuju-search-input:focus::placeholder {
+  color: #74818c;
+}
+.tuju-search-results {
+  position: absolute;
+  overflow: auto;
+  background: linear-gradient(#e8f2f5, #f5f9fa);
+  color: #102f4a;
+  text-align: center;
+  padding: 1.6cqw 2cqw;
+  font-size: 3.5cqw;
+}
+.tuju-search-results h3 {
+  font-size: 3.5cqw;
+  font-weight: 600;
+  margin: 0.5cqw 0 2cqw;
+}
+.tuju-search-results p {
+  font-size: 3.2cqw;
+  color: #586b7d;
+  margin: 3cqw;
+}
+.tuju-search-results button {
+  background: transparent;
+  border: 0;
+  color: #144e83;
+  padding: 2.3cqw 1cqw;
+  font-size: 3.1cqw;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tuju-search-results .tuju-search-place {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 2.4cqw 3cqw;
+  background: #f9fcff;
+  border-radius: 3cqw;
+  margin: 1.2cqw 0;
+  color: #183951;
+}
+.tuju-search-place small {
+  display: block;
+  color: #5f7281;
+  font-size: 2.8cqw;
+  font-weight: 400;
+}
+.native-trip-log {
+  position: absolute;
+  background: #f2f1f6;
+  padding: 0 4.5cqw;
+  overflow: auto;
+}
+.native-trip-log > div {
+  overflow: hidden;
+  border-radius: 5.5cqw;
+  background: white;
+}
+.native-trip-log button {
+  display: flex;
+  align-items: center;
+  gap: 2cqw;
+  min-height: 18.3cqw;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 2cqw 3.8cqw;
+  color: #15334f;
+  cursor: pointer;
+}
+.native-trip-log button + button {
+  border-top: 1px solid #eee;
+}
+.native-trip-log button > span:nth-child(2) {
+  flex: 1;
+}
+.native-trip-log strong,
+.native-trip-log small {
+  display: block;
+}
+.native-trip-log strong {
+  font-weight: 600;
+  font-size: 3.5cqw;
+}
+.native-trip-log small {
+  color: #657a8c;
+  font-size: 2.7cqw;
+}
+.native-trip-log button > span:last-child {
+  font-size: 2.9cqw;
+}
+.native-alert .tuju-live-link,
+.tuju-search-results .tuju-live-link {
+  display: block;
+  color: #0059b8;
+  text-decoration: underline;
+  text-underline-offset: 0.4cqw;
+  font-size: 3.5cqw;
+  font-weight: 600;
+  padding: 2.7cqw;
+  text-align: center;
+}
+.native-alert .tuju-live-link {
+  border-top: 1px solid #9ba9b45c;
+}

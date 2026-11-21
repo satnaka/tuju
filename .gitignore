@@ -9,3 +9,5 @@ node_modules/
 .xcode.env.local
 .bundle/
 vendor/bundle/
+
+.wrangler/
