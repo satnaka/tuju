@@ -39,6 +39,8 @@ struct TuJuTabBar: View {
                 .frame(height: controlHeight)
             }
         }
+        .heroGlass(.floating, radius: controlHeight / 2)
+        .frame(maxWidth: 440)
         .padding(.horizontal, 15)
     }
 
@@ -52,18 +54,14 @@ struct TuJuTabBar: View {
                         Image(systemName: tab.icon).font(.system(size: 22, weight: .semibold))
                         Text(tab.rawValue).font(.system(size: 10, weight: .semibold))
                     }
-                    .foregroundStyle(tab == selected ? Color(red: 0, green: 0.32, blue: 0.61) : .black.opacity(0.9))
+                    .foregroundStyle(tab == selected ? JourneyInk.blue : Color.tujuInk)
                     .frame(maxWidth: .infinity, minHeight: 48)
-                    .background(tab == selected ? Color.cyan.opacity(0.16) : .clear, in: Capsule())
+                    .background(tab == selected ? JourneyInk.blue.opacity(0.12) : .clear, in: Capsule())
                 }
                 .accessibilityAddTraits(tab == selected ? .isSelected : [])
             }
         }
         .padding(4)
-        .background(.ultraThinMaterial, in: Capsule())
-        .background(.white.opacity(0.65), in: Capsule())
-        .overlay { Capsule().stroke(.white.opacity(0.85), lineWidth: 1) }
-        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
         .buttonStyle(.plain)
     }
 }
@@ -181,66 +179,81 @@ struct RootView: View {
                                 location.request()
                             }
                         }
+                        .heroGlassGroup()
                     }.padding(.horizontal, 18).padding(.bottom, 20)
                     if tab == .home { journeyControls(maxHeight: panelLimit) }
                     else {
                         Button { launch = JourneyLaunch() } label: {
-                            searchField.padding(.horizontal, 18)
-                        }.accessibilityLabel("Search places or addresses")
+                            searchField.heroGlass(.control, radius: 24)
+                        }
+                        .frame(maxWidth: 480)
+                        .padding(.horizontal, 18)
+                        .accessibilityLabel("Search places or addresses")
                     }
                 }
-                .padding(.bottom, 72)
             }
-
-            VStack {
-                Spacer()
-                TuJuTabBar(selected: tab, onSelect: selectTab)
-            }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 10) {
+            TuJuTabBar(selected: tab, onSelect: selectTab)
+                .padding(.bottom, 4)
         }
     }
 
     private var categories: some View {
-        GeometryReader { geo in
-            let chipWidth = max(46, min(64, (geo.size.width - 176) / 3))
-            HStack(spacing: 6) {
-                Button { sheet = .rewards } label: {
-                    HStack(spacing: 3) {
-                        ZStack {
-                            Image("HomeRewardTrack").resizable()
-                            if xp == 120 {
-                                Image("HomeRewardProgress").resizable()
-                                    .frame(width: 4.86, height: 2.50).offset(x: 2.43, y: -12.72)
-                            } else {
-                                Circle().inset(by: 0.8)
-                                    .trim(from: 0, to: min(1, CGFloat(xp) / 2000))
-                                    .stroke(Color.blue, lineWidth: 1.6).rotationEffect(.degrees(-90))
-                            }
-                            Image("HomeTrophy").resizable().scaledToFit().frame(width: 21, height: 21)
-                        }.frame(width: 28, height: 28)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Rewards").font(.system(size: 11, weight: .semibold))
-                            Text("\(xp) / 2K XP").font(.system(size: 9))
-                        }
-                    }.frame(width: min(102, geo.size.width * 0.28), height: 40).modifier(HomePill())
+        HStack(spacing: 8) {
+            ScrollView(.horizontal) {
+                HStack(spacing: 6) {
+                    rewardsButton
+                    category("R&R", image: "HomeRest")
+                    category("Food", image: "HomeFood")
+                    category("Fuel", image: "HomeFuel")
                 }
-                category("R&R", image: "HomeRest", query: "R&R", width: chipWidth)
-                category("Food", image: "HomeFood", query: "Food", width: chipWidth)
-                category("Fuel", image: "HomeFuel", query: "Fuel", width: chipWidth)
-                Spacer(minLength: 0)
-                Button { sheet = .profile } label: {
-                    Text(String(name.prefix(1)).uppercased()).fontWeight(.semibold)
-                        .frame(width: 40, height: 40).modifier(HomePill())
-                }.accessibilityLabel("Profile")
-            }.foregroundStyle(Color.tujuInk)
-        }.frame(height: 40)
+                .heroGlassGroup()
+                .padding(.vertical, 4)
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
+            Button { sheet = .profile } label: {
+                Text(String(name.prefix(1)).uppercased()).fontWeight(.semibold)
+                    .frame(width: 44, height: 44)
+                    .heroGlass(.control, radius: 22)
+            }
+            .accessibilityLabel("Profile")
+            .help("Profile")
+        }
+        .foregroundStyle(Color.tujuInk)
+        .frame(height: 52)
     }
 
-    private func category(_ title: String, image: String, query: String, width: CGFloat) -> some View {
-        Button { launch = JourneyLaunch(query: query) } label: {
+    private var rewardsButton: some View {
+        Button { sheet = .rewards } label: {
+            HStack(spacing: 3) {
+                ZStack {
+                    Image("HomeRewardTrack").resizable()
+                    if xp == 120 {
+                        Image("HomeRewardProgress").resizable()
+                            .frame(width: 4.86, height: 2.50).offset(x: 2.43, y: -12.72)
+                    } else {
+                        Circle().inset(by: 0.8)
+                            .trim(from: 0, to: min(1, CGFloat(xp) / 2000))
+                            .stroke(Color.blue, lineWidth: 1.6).rotationEffect(.degrees(-90))
+                    }
+                    Image("HomeTrophy").resizable().scaledToFit().frame(width: 21, height: 21)
+                }.frame(width: 28, height: 28)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Rewards").font(.system(size: 11, weight: .semibold))
+                    Text("\(xp) / 2K XP").font(.system(size: 9)).monospacedDigit()
+                }
+            }.padding(.horizontal, 7).frame(minHeight: 44).heroGlass(.control, radius: 22)
+        }
+    }
+
+    private func category(_ title: String, image: String) -> some View {
+        Button { launch = JourneyLaunch(query: title) } label: {
             HStack(spacing: 3) {
                 Image(image).resizable().scaledToFit().frame(width: 17, height: 17)
                 Text(title).font(.system(size: 13, weight: .semibold)).lineLimit(1)
-            }.frame(width: width, height: 40).modifier(HomePill())
+            }.padding(.horizontal, 6).frame(minWidth: 44, minHeight: 44).heroGlass(.control, radius: 22)
         }
     }
 
@@ -248,30 +261,33 @@ struct RootView: View {
         Button(action: action) {
             Image(asset).resizable().scaledToFit().frame(width: 22, height: 22)
                 .frame(width: 46, height: 46)
-                .background(.white.opacity(0.96), in: Circle())
-                .overlay { Circle().stroke(.cyan.opacity(0.22), lineWidth: 1) }
-                .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
-        }.accessibilityLabel(title)
+                .heroGlass(.control, radius: 23)
+        }.accessibilityLabel(title).help(title)
     }
 
     private var recentDetail: String {
         history.recent.isEmpty ? "Recent destination · Kuala Lumpur" : recent.subtitle
     }
 
-    @ViewBuilder private func journeyControls(maxHeight: CGFloat) -> some View {
-        if useSwiftUIPanel {
-            exploreCard
-        } else {
-            ReactNativeControlSurface(
-                state: HeroUIState(surface: "journey", expanded: cardExpanded, recentName: recent.name,
-                                   recentDetail: recentDetail),
-                onAction: performHomeAction,
-                onHeight: { panelHeight = $0 },
-                onUnavailable: { useSwiftUIPanel = true }
-            )
-            .frame(height: min(panelHeight, maxHeight))
-            .padding(.horizontal, 10)
+    private func journeyControls(maxHeight: CGFloat) -> some View {
+        Group {
+            if useSwiftUIPanel {
+                exploreCard
+            } else {
+                ReactNativeControlSurface(
+                    state: HeroUIState(surface: "journey", expanded: cardExpanded, recentName: recent.name,
+                                       recentDetail: recentDetail),
+                    onAction: performHomeAction,
+                    onHeight: { panelHeight = $0 },
+                    onUnavailable: { useSwiftUIPanel = true }
+                )
+                .frame(height: min(panelHeight, maxHeight))
+            }
         }
+        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .heroGlass(.floating, radius: 30)
+        .frame(maxWidth: 480)
+        .padding(.horizontal, 10)
     }
 
     private func performHomeAction(_ action: String) {
@@ -304,7 +320,9 @@ struct RootView: View {
                         .foregroundStyle(Color.tujuNavy).frame(minHeight: 30)
                 }.frame(maxWidth: .infinity)
             }.accessibilityHint(cardExpanded ? "Collapse journey panel" : "Expand journey panel")
-            Button { launch = JourneyLaunch() } label: { searchField }
+            Button { launch = JourneyLaunch() } label: {
+                searchField.background(.quaternary, in: Capsule())
+            }
             if cardExpanded {
                 HStack(spacing: 8) {
                     shortcut("Home", asset: "HomeHouse", section: .home, data: homeData)
@@ -316,15 +334,12 @@ struct RootView: View {
                 }
                 Button { launch = JourneyLaunch(destination: .oneUtama, showStops: true) } label: {
                     placeRow(asset: "HomeStop", name: "Plan your next R&R stop", detail: "Compare crowd & parking information")
-                        .padding(.horizontal, 10).padding(.vertical, 7).modifier(HomePill(radius: 16))
+                        .padding(.horizontal, 10).padding(.vertical, 7)
+                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 16))
                 }
             }
         }
         .padding(.horizontal, 17).padding(.top, 10).padding(.bottom, 14)
-        .background(LinearGradient(colors: [Color(red: 0.89, green: 0.96, blue: 0.98), Color.white.opacity(0.91)], startPoint: .top, endPoint: .bottom), in: RoundedRectangle(cornerRadius: 27))
-        .overlay { RoundedRectangle(cornerRadius: 27).stroke(.white.opacity(0.95), lineWidth: 1.2) }
-        .shadow(color: .black.opacity(0.06), radius: 9, y: 4)
-        .padding(.horizontal, 10)
     }
 
     private var searchField: some View {
@@ -332,10 +347,9 @@ struct RootView: View {
             Image("HomeSearch").resizable().scaledToFit().frame(width: 20, height: 20)
             Text("Search places or addresses").font(.subheadline)
             Spacer()
-        }.foregroundStyle(Color(red: 0.25, green: 0.37, blue: 0.49))
+        }.foregroundStyle(Color.tujuInk)
             .padding(.horizontal, 15).frame(minHeight: 44)
-            .background(LinearGradient(colors: [.white, Color(red: 0.92, green: 0.97, blue: 1)], startPoint: .top, endPoint: .bottom), in: Capsule())
-            .overlay { Capsule().stroke(.blue.opacity(0.23), lineWidth: 1) }
+            .contentShape(Capsule())
     }
 
     private func placeRow(asset: String, name: String, detail: String) -> some View {
@@ -354,7 +368,8 @@ struct RootView: View {
             HStack(spacing: 5) {
                 Image(asset).resizable().scaledToFit().frame(width: 19, height: 19)
                 Text(title).font(.system(size: 14, weight: .semibold))
-            }.foregroundStyle(Color.tujuInk).frame(maxWidth: .infinity, minHeight: 44).modifier(HomePill(radius: 17))
+            }.foregroundStyle(Color.tujuInk).frame(maxWidth: .infinity, minHeight: 44)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 17))
         }.contextMenu {
             if section != .saved { Button("Change " + section.rawValue + " address") { sheet = section } }
         }
@@ -377,15 +392,6 @@ struct RootView: View {
     private func selectTab(_ newTab: TuJuTab) {
         if newTab == .profile { sheet = .profile }
         else { tab = newTab }
-    }
-}
-
-private struct HomePill: ViewModifier {
-    var radius: CGFloat = 24
-    func body(content: Content) -> some View {
-        content.heroGlass(.card, radius: radius)
-            .overlay { RoundedRectangle(cornerRadius: radius).stroke(.white.opacity(0.9), lineWidth: 1) }
-            .shadow(color: .black.opacity(0.04), radius: 3, y: 2)
     }
 }
 

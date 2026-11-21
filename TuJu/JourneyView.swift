@@ -182,12 +182,15 @@ struct JourneyView: View {
                     .textInputAutocapitalization(.words).submitLabel(.search).focused($typing)
                     .onSubmit { typing = false }
                 if !query.isEmpty {
-                    Button { query = ""; savedOnly = false } label: { Image(systemName: "xmark.circle.fill") }
+                    Button { query = ""; savedOnly = false } label: {
+                        Image(systemName: "xmark.circle.fill").frame(minWidth: 44, minHeight: 44)
+                    }
                         .accessibilityLabel("Clear search")
                 }
             }
-            .padding(.horizontal, 15).frame(minHeight: 46).heroGlass(.field, radius: 30, focused: typing)
+            .padding(.horizontal, 15).frame(minHeight: 46).heroGlass(.floating, radius: 23, focused: typing)
         }
+        .heroGlassGroup()
         .padding(.horizontal, 10)
     }
 
@@ -264,22 +267,29 @@ struct JourneyView: View {
                 backButton { self.destination = nil; stop = nil; plans = []; demo = false; startedID = nil }
                 VStack(spacing: 5) {
                     Text(demo ? "Your location · Concept" : (origin == nil ? "From KL Sentral" : "Your location"))
-                        .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 38).journeyCard(22)
-                    Text(demo ? "One Utama · East Entrance" : destination.name).font(.subheadline.bold()).lineLimit(2).frame(maxWidth: .infinity, minHeight: 42).journeyCard(22)
+                        .font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, minHeight: 38)
+                        .heroGlass(.floating, radius: 22)
+                    Text(demo ? "One Utama · East Entrance" : destination.name).font(.subheadline.bold()).lineLimit(2)
+                        .frame(maxWidth: .infinity, minHeight: 42).heroGlass(.floating, radius: 22)
                 }.frame(maxWidth: .infinity)
                 let saved = history.saved.contains { $0.id == destination.id }
                 Button { history.toggleSaved(destination) } label: {
-                    Image(systemName: saved ? "heart.fill" : "heart").frame(width: 44, height: 44).journeyCard(22)
+                    Image(systemName: saved ? "heart.fill" : "heart").frame(width: 44, height: 44)
+                        .heroGlass(.control, radius: 22)
                 }.accessibilityLabel(saved ? "Remove saved place" : "Save place")
             }
             HStack(spacing: 10) {
                 Text("Drive").foregroundStyle(JourneyInk.blue).padding(.horizontal, 30).frame(minHeight: 32)
                     .background(JourneyInk.sky, in: Capsule()).overlay(Capsule().strokeBorder(Color.blue.opacity(0.35)))
                 if demo {
-                    Button("Ride options") { sheet = .ride }.padding(.horizontal, 17).frame(minHeight: 32).journeyCard(18)
+                    Button { sheet = .ride } label: {
+                        Text("Ride options").padding(.horizontal, 17).frame(minHeight: 32)
+                            .heroGlass(.control, radius: 18)
+                            .frame(minHeight: 44).contentShape(Rectangle())
+                    }
                 }
             }.font(.caption.weight(.semibold))
-        }.padding(.horizontal, 6)
+        }.heroGlassGroup().padding(.horizontal, 6)
     }
 
     private var routePanel: some View {
@@ -387,8 +397,9 @@ struct JourneyView: View {
     }
 
     private func backButton(action: @escaping () -> Void) -> some View {
-        Button(action: action) { Image(systemName: "chevron.left").frame(width: 44, height: 44).journeyCard(22) }
-            .accessibilityLabel("Back")
+        Button(action: action) {
+            Image(systemName: "chevron.left").frame(width: 44, height: 44).heroGlass(.control, radius: 22)
+        }.accessibilityLabel("Back")
     }
 
     private func setQuery(_ value: String) { query = value; savedOnly = false; typing = false }

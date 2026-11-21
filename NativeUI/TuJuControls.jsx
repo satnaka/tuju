@@ -1,6 +1,8 @@
 import React, { useCallback, useRef } from "react";
 import {
+  DynamicColorIOS,
   NativeModules,
+  PlatformColor,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,12 +20,24 @@ import { Segment } from "heroui-native-pro/segment";
 import icons from "./build/icons";
 
 const colors = {
-  navy: "#103160",
-  ink: "#0a1c33",
-  muted: "#405d7c",
-  blue: "#00559e",
-  glass: "rgba(240,248,253,.92)",
-  edge: "rgba(255,255,255,.94)",
+  navy: DynamicColorIOS({ light: "#103160", dark: "#E5F3FF" }),
+  ink: PlatformColor("labelColor"),
+  muted: PlatformColor("secondaryLabelColor"),
+  blue: DynamicColorIOS({
+    light: "#004B85",
+    dark: "#86CFFF",
+    highContrastLight: "#003F78",
+    highContrastDark: "#B9E6FF",
+  }),
+  selected: DynamicColorIOS({
+    light: "rgba(204, 230, 247, 0.83)",
+    dark: "rgba(10, 36, 58, 0.83)",
+    highContrastLight: "#C5E5FB",
+    highContrastDark: "#112D47",
+  }),
+  field: PlatformColor("tertiarySystemFillColor"),
+  shortcut: PlatformColor("quaternarySystemFillColor"),
+  separator: PlatformColor("separatorColor"),
 };
 const tabs = [
   ["Home", "house-fill"],
@@ -108,7 +122,7 @@ function PlaceRow({ icon, title, detail, highlighted, onPress }) {
         <Text style={s.rowTitle} numberOfLines={2}>
           {title}
         </Text>
-        <Text style={[s.detail, highlighted && s.stopDetail]} numberOfLines={2}>
+        <Text style={s.detail} numberOfLines={2}>
           {detail}
         </Text>
       </View>
@@ -193,7 +207,7 @@ function Navigation({ selected, action, measure }) {
   return (
     <View onLayout={(event) => measure(event.nativeEvent.layout.height)}>
       <Segment value={selected} style={s.nav}>
-        <Segment.Group style={s.navGroup}>
+        <Segment.Group background={null} style={s.navGroup}>
           {tabs.map(([title, icon]) => {
             const active = selected === title;
             return (
@@ -259,38 +273,29 @@ export default function TuJuControls(props) {
   );
 }
 
-const capsule = {
-  borderWidth: 1,
-  borderColor: colors.edge,
-  backgroundColor: colors.glass,
-};
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: "transparent" },
   scroll: { flex: 1 },
   panel: {
-    gap: 9,
-    paddingHorizontal: 17,
-    paddingTop: 10,
-    paddingBottom: 14,
-    borderWidth: 1,
-    borderColor: colors.edge,
-    borderRadius: 27,
-    backgroundColor: "#f5fbfd",
-    backgroundImage: "linear-gradient(180deg, #e3f6fa 0%, #fbfeff 100%)",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   toggle: {
     padding: 0,
-    minHeight: 0,
+    minHeight: 44,
     height: "auto",
-    gap: 9,
+    gap: 6,
     flexDirection: "column",
     borderRadius: 0,
     backgroundColor: "transparent",
   },
-  handle: { width: 34, height: 4, borderRadius: 2, backgroundColor: "#287ed1" },
+  handle: { width: 32, height: 4, borderRadius: 2, backgroundColor: colors.separator },
   heading: {
     fontSize: 23,
     lineHeight: 30,
+    letterSpacing: -0.5,
     fontWeight: "600",
     color: colors.navy,
     textAlign: "center",
@@ -298,13 +303,12 @@ const s = StyleSheet.create({
   search: {
     minHeight: 44,
     height: "auto",
-    paddingVertical: 7,
-    paddingHorizontal: 15,
-    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    gap: 8,
     justifyContent: "flex-start",
-    backgroundColor: "#f4faff",
-    borderColor: "#bee1fc",
-    borderWidth: 1,
+    backgroundColor: colors.field,
+    borderWidth: 0,
     borderRadius: 24,
     flexDirection: "row",
     alignItems: "center",
@@ -312,7 +316,7 @@ const s = StyleSheet.create({
   searchLabel: { color: colors.muted, fontSize: 15, flexShrink: 1 },
   shortcuts: { flexDirection: "row", gap: 8 },
   shortcut: {
-    ...capsule,
+    backgroundColor: colors.shortcut,
     flex: 1,
     minWidth: 0,
     minHeight: 44,
@@ -322,7 +326,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     gap: 5,
     padding: 5,
-    borderRadius: 17,
+    borderRadius: 16,
   },
   shortcutLabel: {
     fontSize: 14,
@@ -331,9 +335,10 @@ const s = StyleSheet.create({
     flexShrink: 1,
   },
   row: {
-    minHeight: 40,
+    minHeight: 44,
     height: "auto",
-    padding: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     gap: 12,
     flexDirection: "row",
     justifyContent: "flex-start",
@@ -342,22 +347,16 @@ const s = StyleSheet.create({
     backgroundColor: "transparent",
   },
   stop: {
-    ...capsule,
-    minHeight: 54,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 17,
+    minHeight: 48,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.separator,
   },
   rowText: { flex: 1, gap: 2 },
   rowTitle: { fontSize: 15, fontWeight: "600", color: colors.ink },
-  detail: { fontSize: 12, color: colors.ink },
-  stopDetail: { fontSize: 11 },
+  detail: { fontSize: 12, color: colors.muted },
   nav: {
-    ...capsule,
-    borderRadius: 36,
-    padding: 3,
-    backgroundColor: "#edf4f5",
-    backgroundImage: "linear-gradient(180deg, #e3ebed 0%, #fcfefe 100%)",
+    padding: 4,
+    backgroundColor: "transparent",
   },
   navGroup: {
     flexDirection: "row",
@@ -381,10 +380,10 @@ const s = StyleSheet.create({
     paddingVertical: 3,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 32,
+    borderRadius: 100,
     backgroundColor: "transparent",
   },
-  selected: { backgroundColor: "#c6e8ef" },
-  tabLabel: { fontSize: 10, fontWeight: "600", color: colors.ink },
+  selected: { backgroundColor: colors.selected },
+  tabLabel: { fontSize: 11, fontWeight: "600", color: colors.ink },
   selectedText: { color: colors.blue },
 });

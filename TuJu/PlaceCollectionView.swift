@@ -67,7 +67,7 @@ struct TripHistoryView: View {
                         }
                     }
                 }
-            }.navigationTitle("Trips").padding(.bottom, 62)
+            }.navigationTitle("Trips")
         }.foregroundStyle(Color.tujuNavy)
     }
 }

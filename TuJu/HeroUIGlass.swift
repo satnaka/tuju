@@ -1,14 +1,12 @@
 import SwiftUI
 
-/// SwiftUI equivalents of the HeroUI Pro Glass surface and interaction tokens.
-/// System material supplies backdrop blur and follows the user's display preferences.
 enum HeroUIGlass {
     static let radius: CGFloat = 8
     static let cardRadius = radius * 3
     static let controlFont = Font.subheadline.weight(.medium)
 
     enum Surface {
-        case card, panel, field
+        case card, panel, floating, control
     }
 }
 
@@ -16,6 +14,15 @@ extension View {
     func heroGlass(_ surface: HeroUIGlass.Surface, radius: CGFloat = HeroUIGlass.cardRadius,
                    focused: Bool = false) -> some View {
         modifier(HeroUIGlassSurface(surface: surface, radius: radius, focused: focused))
+    }
+
+    @ViewBuilder
+    func heroGlassGroup() -> some View {
+        if #available(iOS 26, macCatalyst 26, *) {
+            GlassEffectContainer(spacing: 0) { self }
+        } else {
+            self
+        }
     }
 }
 
@@ -26,41 +33,52 @@ private struct HeroUIGlassSurface: ViewModifier {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.colorSchemeContrast) private var contrast
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
-        let dark = scheme == .dark
-        let edge = dark ? Color.white : .black
-        content
-            .background {
-                ZStack {
-                    if reduceTransparency {
+        let needsOpaqueSurface = reduceTransparency || contrast == .increased
+        Group {
+            if #available(iOS 26, macCatalyst 26, *),
+               (surface == .floating || surface == .control), !needsOpaqueSurface {
+                content.glassEffect(.regular.interactive(surface == .control && !reduceMotion), in: shape)
+            } else {
+                content.background {
+                    if needsOpaqueSurface {
                         shape.fill(Color(uiColor: .systemBackground))
                     } else {
-                        shape.fill(.regularMaterial)
-                    }
-                    switch surface {
-                    case .card:
-                        shape.fill(.white.opacity(dark ? 0.04 : 0.80))
-                    case .panel:
-                        shape.fill(LinearGradient(
-                            colors: [JourneyInk.sky.opacity(dark ? 0.05 : 0.75), .white.opacity(dark ? 0.05 : 0.75)],
-                            startPoint: .top, endPoint: .bottom
-                        ))
-                    case .field:
-                        shape.fill(dark ? .white.opacity(0.08) : Color(red: 0.02, green: 0.03, blue: 0.08).opacity(0.06))
+                        materialBackground(shape)
                     }
                 }
-                .shadow(color: .black.opacity(surface == .panel ? 0.08 : 0), radius: 14, y: 7)
             }
-            .overlay {
-                if focused {
-                    shape.inset(by: -2).strokeBorder(.tint, lineWidth: 2).allowsHitTesting(false)
-                } else if surface == .field || contrast == .increased {
-                    shape.strokeBorder(edge.opacity(contrast == .increased ? 0.36 : 0.04), lineWidth: 1)
-                        .allowsHitTesting(false)
-                }
+        }
+        .overlay {
+            if focused {
+                shape.inset(by: -2).strokeBorder(.tint, lineWidth: 2).allowsHitTesting(false)
+            } else if contrast == .increased {
+                shape.strokeBorder(Color.primary.opacity(0.60), lineWidth: 1)
+                    .allowsHitTesting(false)
             }
+        }
+    }
+
+    private func materialBackground(_ shape: RoundedRectangle) -> some View {
+        let dark = scheme == .dark
+        return ZStack {
+            shape.fill(.regularMaterial)
+            switch surface {
+            case .card:
+                shape.fill(.white.opacity(dark ? 0.04 : 0.80))
+            case .panel:
+                shape.fill(LinearGradient(
+                    colors: [JourneyInk.sky.opacity(dark ? 0.05 : 0.75), .white.opacity(dark ? 0.05 : 0.75)],
+                    startPoint: .top, endPoint: .bottom
+                ))
+            case .floating, .control:
+                EmptyView()
+            }
+        }
+        .shadow(color: .black.opacity(surface == .panel ? 0.08 : 0), radius: 14, y: 7)
     }
 }
 

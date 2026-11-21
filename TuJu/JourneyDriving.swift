@@ -125,7 +125,7 @@ struct JourneyDriveView: View {
                             control("square.2.layers.3d", label: "Switch to Simple Mode") { simple = true }
                             control("gearshape", label: "Map appearance") { showMapSettings = true }
                         }
-                    }.padding(.horizontal, 7)
+                    }.heroGlassGroup().padding(.horizontal, 7)
                     cards
                 }.padding(.horizontal, 11).padding(.vertical, 4)
             }.frame(width: bounds.size.width, height: bounds.size.height)
@@ -194,7 +194,7 @@ struct JourneyDriveView: View {
             }
             Text("60").font(.title3.bold()); Text("km/h").font(.caption2)
         }.padding(4).foregroundStyle(Color(red: 0.0, green: 0.42, blue: 0.23))
-            .background(.white.opacity(0.88), in: RoundedRectangle(cornerRadius: 15))
+            .heroGlass(.floating, radius: 15)
             .accessibilityLabel("Illustrated speed 60 kilometres an hour" + (speedLimit ? ", sample speed limit 80" : ""))
     }
 
@@ -213,7 +213,7 @@ struct JourneyDriveView: View {
 
     private func control(_ symbol: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: symbol).font(.title3).frame(width: 46, height: 46).journeyCard(15)
+            Image(systemName: symbol).font(.title3).frame(width: 46, height: 46).heroGlass(.control, radius: 15)
         }.accessibilityLabel(label)
     }
 

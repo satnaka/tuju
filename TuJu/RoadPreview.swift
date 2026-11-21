@@ -54,9 +54,10 @@ struct TuJuRoadPreviewView: View {
                                 .font(.subheadline.weight(.semibold))
                             Spacer()
                             Button { dismiss() } label: {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.title2)
+                                Image(systemName: "xmark")
+                                    .font(.headline)
                                     .frame(width: 44, height: 44)
+                                    .heroGlass(.control, radius: 22)
                             }
                             .accessibilityLabel("Close navigation preview")
                         }
@@ -72,7 +73,7 @@ struct TuJuRoadPreviewView: View {
                             }
                             .padding(8)
                             .foregroundStyle(Color(red: 0.025, green: 0.40, blue: 0.19))
-                            .background(.white, in: RoundedRectangle(cornerRadius: 12))
+                            .heroGlass(.floating, radius: 12)
                             .accessibilityLabel("Preview speed, 60 kilometres per hour")
                             Spacer()
                         }

@@ -42,7 +42,9 @@ struct TuJuRideView: View {
         ScrollView {
             VStack(spacing: 14) {
                 HStack {
-                    Button { dismiss() } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left").frame(width: 44, height: 44).heroGlass(.control, radius: 22)
+                    }
                         .accessibilityLabel("Back to route")
                     Spacer()
                     Text(stage.title).font(.title2.bold())
