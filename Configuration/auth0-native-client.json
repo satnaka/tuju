@@ -1,0 +1,9 @@
+{
+  "name": "TuJu iOS",
+  "app_type": "native",
+  "is_first_party": true,
+  "oidc_conformant": true,
+  "token_endpoint_auth_method": "none",
+  "grant_types": ["authorization_code", "refresh_token"],
+  "callbacks": ["com.satnaka.tuju:/oauth/callback"]
+}
